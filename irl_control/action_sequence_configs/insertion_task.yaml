@@ -1,0 +1,104 @@
+grommet_action_objects:
+    male_object:
+        joint_name: "free_joint_grommet_11mm"
+        hover_offset: [0, 0, 0.2]
+        grip_offset: [0, 0, 0.158]
+        initial_pos_xyz: [-0.2, 0.5, 0.005]
+        initial_pos_abg: [0, 0, 20]
+        grip_yaw: 90
+    female_object: 
+        joint_name: "free_joint_dual_peg"
+        hover_offset: [0, 0, 0.23]
+        hover_offset_lift: [0, 0, 0.25]
+        insert_offset: [0, 0, 0.18]
+        initial_pos_xyz: [-0.4, 0.7, 0.0]
+        initial_pos_abg: [0, 0, 30]
+        grip_yaw: 90
+
+nist_action_objects:
+    male_object:
+        joint_name: "free_joint_male"
+        hover_offset: [0, 0, 0.32]
+        grip_offset: [0, 0, 0.24]        
+        initial_pos_xyz: [0.4, 0.6, -0.0515]
+        initial_pos_abg: [0, 0, 30]
+        grip_yaw: 90
+    female_object: 
+        joint_name: "free_joint_female"
+        hover_offset: [0, 0, 0.27]
+        hover_offset_lift: [0, 0, 0.3]
+        insert_offset: [0, 0, 0.22]
+        initial_pos_xyz: [0.7, 0.4, -0.00002]
+        initial_pos_abg: [0, 0, -30]
+        grip_yaw: 90
+
+insertion_action_sequence:
+    # Hover above the male object
+    -   action: WP
+        target_xyz: male_object
+        target_abg: male_object
+        offset: hover_offset
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: -0.08
+        gripper_duration: 1.0
+    # Position gripper around the male object
+    -   action: WP
+        target_xyz: male_object
+        target_abg: male_object
+        offset: grip_offset
+        gripper_force: -0.08
+    # Close the gripper (Grab the object)
+    -   action: GRIP
+        gripper_force: 0.2
+        gripper_duration: 2.0
+    # Lift the arm vertically
+    -   action: WP
+        target_xyz: male_object
+        target_abg: male_object
+        gripper_force: 0.2
+        offset: hover_offset
+    # Move the object to the female (Hover)
+    -   action: WP
+        max_speed_xyz: 0.3
+        target_xyz: female_object
+        target_abg: male_object
+        gripper_force: 0.2
+        offset: hover_offset
+    # Move the object to the female (Hover)
+    -   action: WP
+        max_speed_xyz: 0.1
+        target_xyz: female_object
+        target_abg: female_object
+        gripper_force: 0.2
+        offset: hover_offset
+    # Wait a moment before inserting the male
+    -   action: GRIP
+        gripper_force: 0.2
+        gripper_duration: 1.0
+    # Lower the object into the female
+    -   action: WP
+        target_xyz: female_object
+        target_abg: female_object
+        max_speed_xyz: 1.0
+        gripper_force: 0.1
+        max_error: 0.01
+        offset: insert_offset
+    # Release the gripper
+    -   action: GRIP
+        gripper_force: -0.1
+        gripper_duration: 2.0
+    # Lift the arm vertically
+    -   action: WP
+        target_xyz: female_object
+        target_abg: female_object
+        gripper_force: -0.1
+        max_speed_xyz: 0.1
+        offset: hover_offset_lift
+    # Return to start_pos
+    -   action: WP
+        target_xyz: start_pos
+        target_abg: female_object
+        max_speed_xyz: 2.0
+        gripper_force: 0
+        max_error: 0.05

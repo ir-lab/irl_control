@@ -1,0 +1,47 @@
+devices:
+    -   id: 0
+        name: "base"
+        max_vel: [0, 2]
+        EE: "ur_stand_dummy"
+        ctrlr_dof_xyz: [False, False, False]
+        ctrlr_dof_abg: [False, False, True]
+        start_angles: [0.0]
+        num_gripper_joints: 0
+    -   id: 1
+        name: "ur5right"
+        max_vel: [2, 3]
+        EE: "ur_EE_ur5right"
+        ctrlr_dof_xyz: [True, True, True]
+        ctrlr_dof_abg: [True, True, True]
+        start_angles: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        num_gripper_joints: 6
+    -   id: 2
+        name: "ur5left"
+        max_vel: [10, 2]
+        EE: "ur_EE_ur5left"
+        ctrlr_dof_xyz: [True, True, True]
+        ctrlr_dof_abg: [False, False, False]
+        start_angles: [0.126, -0.942, -1.88, -4.15, -4.78, 0.0]
+        num_gripper_joints: 6
+robots:
+    -   id: 0
+        name: "DualUR5"
+        device_ids: [0,1,2]
+controller_configs:
+    -   name: "osc0"
+        kp: 2000
+        kv: 20
+        ki: 1
+        ko: 2000
+    -   name: "osc1"
+        kp: 200
+        kv: 50
+        ki: 1
+        ko: 200
+    -   name: "osc2"
+        kp: 200
+        kv: 20
+        ki: 1
+        ko: 200
+    -   name: "nullspace"
+        kv: 10

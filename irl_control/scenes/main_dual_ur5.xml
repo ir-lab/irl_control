@@ -1,0 +1,17 @@
+<mujoco>
+    <compiler angle="radian" meshdir="../meshes/"/>
+    <option timestep="0.001" solver="Newton" impratio="10" tolerance="1e-10"/>
+
+    <size njmax="8000" nconmax="4000"/>
+    <include file="world.xml"/>
+
+    <include file="dual_ur5.xml"/>
+
+    <!-- <include file="../meshes/dual_pegs/grommet_11mm.xml"/> -->
+    
+    <!-- <include file="../meshes/male_nist/male_nist.xml"/> -->
+    <!-- <include file="../meshes/dual_pegs/dual_pegs.xml"/> -->
+    <include file="../meshes/Female_NIST/Female_NIST.xml"/>
+    <include file="../meshes/Male_NIST/Male_NIST.xml"/>
+    <!-- <include file="../meshes/pegs/nist.xml"/> -->
+</mujoco>

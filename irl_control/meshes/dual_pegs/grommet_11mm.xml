@@ -1,0 +1,118 @@
+<mujocoimport>
+    <asset>
+        <mesh name="grommet_11mm_handle" file="dual_pegs/handle.stl" />
+        <mesh name="grommet_11mm_01"     file="dual_pegs/hole_11_01.stl" />
+        <mesh name="grommet_11mm_02"     file="dual_pegs/hole_11_02.stl" />
+        <mesh name="grommet_11mm_03"     file="dual_pegs/hole_11_03.stl" />
+        <mesh name="grommet_11mm_04"     file="dual_pegs/hole_11_04.stl" />
+        <mesh name="grommet_11mm_05"     file="dual_pegs/hole_11_05.stl" />
+        <mesh name="grommet_11mm_06"     file="dual_pegs/hole_11_06.stl" />
+        <mesh name="grommet_11mm_07"     file="dual_pegs/hole_11_07.stl" />
+        <mesh name="grommet_11mm_08"     file="dual_pegs/hole_11_08.stl" />
+        <mesh name="grommet_11mm_09"     file="dual_pegs/hole_11_09.stl" />
+        <mesh name="grommet_11mm_10"     file="dual_pegs/hole_11_10.stl" />
+        <mesh name="grommet_11mm_11"     file="dual_pegs/hole_11_11.stl" />
+        <mesh name="grommet_11mm_12"     file="dual_pegs/hole_11_12.stl" />
+        <mesh name="grommet_11mm_13"     file="dual_pegs/hole_11_13.stl" />
+        <mesh name="grommet_11mm_14"     file="dual_pegs/hole_11_14.stl" />
+        <mesh name="grommet_11mm_15"     file="dual_pegs/hole_11_15.stl" />
+        <mesh name="grommet_11mm_16"     file="dual_pegs/hole_11_16.stl" />
+        <mesh name="grommet_11mm_17"     file="dual_pegs/hole_11_17.stl" />
+        <mesh name="grommet_11mm_18"     file="dual_pegs/hole_11_18.stl" />
+        <mesh name="grommet_11mm_19"     file="dual_pegs/hole_11_19.stl" />
+        <mesh name="grommet_11mm_20"     file="dual_pegs/hole_11_20.stl" />
+        <mesh name="grommet_11mm_21"     file="dual_pegs/hole_11_21.stl" />
+        <mesh name="grommet_11mm_22"     file="dual_pegs/hole_11_22.stl" />
+        <mesh name="grommet_11mm_23"     file="dual_pegs/hole_11_23.stl" />
+        <mesh name="grommet_11mm_24"     file="dual_pegs/hole_11_24.stl" />
+        <mesh name="grommet_11mm_25"     file="dual_pegs/hole_11_25.stl" />
+        <mesh name="grommet_11mm_26"     file="dual_pegs/hole_11_26.stl" />
+        <mesh name="grommet_11mm_27"     file="dual_pegs/hole_11_27.stl" />
+        <mesh name="grommet_11mm_28"     file="dual_pegs/hole_11_28.stl" />
+        <mesh name="grommet_11mm_29"     file="dual_pegs/hole_11_29.stl" />
+        <mesh name="grommet_11mm_30"     file="dual_pegs/hole_11_30.stl" />
+        <mesh name="grommet_11mm_31"     file="dual_pegs/hole_11_31.stl" />
+        <mesh name="grommet_11mm_32"     file="dual_pegs/hole_11_32.stl" />
+        <mesh name="grommet_11mm_33"     file="dual_pegs/hole_11_33.stl" />
+
+    </asset>
+
+    <worldbody>
+        <body name="grommet_11mm" pos="-0.1 0.5 0.005" quat="1.0 0 0 0">
+        <!-- <body name="grommet_16mm" pos="0.2 0.475 0.0" quat="1.0 0 0 0"> -->
+            <freejoint name="free_joint_grommet_11mm"/>
+            <inertial pos="0 0 0" mass="0.1" diaginertia="0.005 0.005 0.005"/>
+            <geom name="grommet_11mm_handle" type="mesh" mesh="grommet_11mm_handle" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.025" solimp="0.99 0.99 0.01" solref="0.01 1" condim="4" friction="0.9 0.9 10"/>
+            <body name="handle_11mm_flap_a" pos="0 0 0.005" quat="0 0 0.707108 0">
+                <geom name="grommet_11mm_01_a" type="mesh" mesh="grommet_11mm_01" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_02_a" type="mesh" mesh="grommet_11mm_02" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_03_a" type="mesh" mesh="grommet_11mm_03" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_04_a" type="mesh" mesh="grommet_11mm_04" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_05_a" type="mesh" mesh="grommet_11mm_05" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_06_a" type="mesh" mesh="grommet_11mm_06" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_07_a" type="mesh" mesh="grommet_11mm_07" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_08_a" type="mesh" mesh="grommet_11mm_08" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_09_a" type="mesh" mesh="grommet_11mm_09" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_10_a" type="mesh" mesh="grommet_11mm_10" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_11_a" type="mesh" mesh="grommet_11mm_11" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_12_a" type="mesh" mesh="grommet_11mm_12" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_13_a" type="mesh" mesh="grommet_11mm_13" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_14_a" type="mesh" mesh="grommet_11mm_14" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_15_a" type="mesh" mesh="grommet_11mm_15" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_16_a" type="mesh" mesh="grommet_11mm_16" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_17_a" type="mesh" mesh="grommet_11mm_17" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_18_a" type="mesh" mesh="grommet_11mm_18" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_19_a" type="mesh" mesh="grommet_11mm_19" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_20_a" type="mesh" mesh="grommet_11mm_20" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_21_a" type="mesh" mesh="grommet_11mm_21" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_22_a" type="mesh" mesh="grommet_11mm_22" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_23_a" type="mesh" mesh="grommet_11mm_23" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_24_a" type="mesh" mesh="grommet_11mm_24" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_25_a" type="mesh" mesh="grommet_11mm_25" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_26_a" type="mesh" mesh="grommet_11mm_26" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_27_a" type="mesh" mesh="grommet_11mm_27" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_28_a" type="mesh" mesh="grommet_11mm_28" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_29_a" type="mesh" mesh="grommet_11mm_29" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_30_a" type="mesh" mesh="grommet_11mm_30" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_31_a" type="mesh" mesh="grommet_11mm_31" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_32_a" type="mesh" mesh="grommet_11mm_32" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_33_a" type="mesh" mesh="grommet_11mm_33" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+            </body>
+            <body name="handle_11mm_flap_b" pos="0 0 0">
+                <geom name="grommet_11mm_01_b" type="mesh" mesh="grommet_11mm_01" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_02_b" type="mesh" mesh="grommet_11mm_02" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_03_b" type="mesh" mesh="grommet_11mm_03" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_04_b" type="mesh" mesh="grommet_11mm_04" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_05_b" type="mesh" mesh="grommet_11mm_05" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_06_b" type="mesh" mesh="grommet_11mm_06" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_07_b" type="mesh" mesh="grommet_11mm_07" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_08_b" type="mesh" mesh="grommet_11mm_08" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_09_b" type="mesh" mesh="grommet_11mm_09" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_10_b" type="mesh" mesh="grommet_11mm_10" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_11_b" type="mesh" mesh="grommet_11mm_11" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_12_b" type="mesh" mesh="grommet_11mm_12" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_13_b" type="mesh" mesh="grommet_11mm_13" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_14_b" type="mesh" mesh="grommet_11mm_14" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_15_b" type="mesh" mesh="grommet_11mm_15" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_16_b" type="mesh" mesh="grommet_11mm_16" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_17_b" type="mesh" mesh="grommet_11mm_17" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_18_b" type="mesh" mesh="grommet_11mm_18" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_19_b" type="mesh" mesh="grommet_11mm_19" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_20_b" type="mesh" mesh="grommet_11mm_20" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_21_b" type="mesh" mesh="grommet_11mm_21" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_22_b" type="mesh" mesh="grommet_11mm_22" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_23_b" type="mesh" mesh="grommet_11mm_23" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_24_b" type="mesh" mesh="grommet_11mm_24" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_25_b" type="mesh" mesh="grommet_11mm_25" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_26_b" type="mesh" mesh="grommet_11mm_26" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_27_b" type="mesh" mesh="grommet_11mm_27" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_28_b" type="mesh" mesh="grommet_11mm_28" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_29_b" type="mesh" mesh="grommet_11mm_29" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_30_b" type="mesh" mesh="grommet_11mm_30" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_31_b" type="mesh" mesh="grommet_11mm_31" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_32_b" type="mesh" mesh="grommet_11mm_32" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+                <geom name="grommet_11mm_33_b" type="mesh" mesh="grommet_11mm_33" pos="0 0 0" material="silver" conaffinity="1" contype="1" mass="0.0001"/>
+            </body>
+        </body>
+    </worldbody>
+</mujocoimport>

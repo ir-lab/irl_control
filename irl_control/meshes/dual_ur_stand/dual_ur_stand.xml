@@ -1,0 +1,12 @@
+<mujocoimport>
+    <asset>
+        <mesh name="dual_ur_stand"    file="dual_ur_stand/dual_ur_stand.stl" />
+    </asset>
+
+    <worldbody>
+        <body name="dual_ur_stand" pos="0.0 0.0 0.0">
+            <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            <geom name="ur_stand_base" type="mesh" mesh="dual_ur_stand" pos="0 0 0" material="grey" conaffinity="1" contype="2"/>
+        </body>
+    </worldbody>
+</mujocoimport>

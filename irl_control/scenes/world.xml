@@ -1,0 +1,50 @@
+<mujocoimport>
+    <asset>
+        <texture name="grid" builtin="checker" height="500" rgb1=".1 .2 .3" rgb2=".2 .3 .4" type="2d" width="500"/>
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+        <texture name="skybox" type="skybox" builtin="gradient" rgb1=".1 .2 .3" rgb2="0 0 0" width="800" height="800" mark="random" markrgb="1 1 1"/>
+        <material name="silver" specular="1" shininess="0.5" reflectance="1" emission="0.25" rgba="0.82 0.82 0.82 1"/>
+        <material name="grey" specular="1" shininess="0.5" reflectance="1" emission="0.1" rgba="0.5 0.5 0.5 1"/>
+        <material name="blue" specular="1" shininess="0.5" reflectance="1" emission="0" rgba="0.678 0.847 0.902 1"/>
+        <material name="black" specular="1" shininess="0.5" reflectance="1" emission="0" rgba="0.2 0.2 0.2 1"/>
+    </asset>
+
+    <visual>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <quality shadowsize="2048"/>
+        <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3"/>
+    </visual>
+
+    <worldbody>
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" castshadow="false"/>
+        <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="grid" condim="1"/>
+
+        <camera pos="2 0 1" xyaxes="0 1 0 -0.65 0 1"/>
+
+        <body name="hand_left" pos="0 0 0.15" mocap="true">
+            <geom type="box" size=".01 .02 .01" rgba="0 0 1 .5" contype="2" conaffinity="2"/>
+        </body>
+        
+        <body name="hand_right" pos="0 0 0.15" mocap="true">
+            <geom type="box" size=".01 .02 .01" rgba="1 0 0 .5" contype="2" conaffinity="2"/>
+        </body>
+
+        <body name="target_red" pos="0 0 -0.15" mocap="true">
+            <geom name="target_red" type="sphere" size="0.05" rgba=".9 0 0 .5" contype="4" conaffinity="4"/>
+        </body>
+
+        <body name="target_blue" pos="0 0 -0.15" mocap="true">
+            <geom name="target_blue" type="sphere" size="0.05" rgba="0 0 0.9 .5" contype="4" conaffinity="4"/>
+        </body>
+
+        <body name="target_orientation1" pos="0 0 -0.15" mocap="true">
+            <geom type="box" size=".02 .04 .06" rgba=".9 0 0 .5" contype="8" conaffinity="8"/>
+        </body>
+
+        <body name="target_orientation2" pos="0 0 -0.15" mocap="true">
+            <geom type="box" size=".02 .04 .06" rgba=".9 0 0 .5" contype="8" conaffinity="8"/>
+        </body>
+
+    </worldbody>
+</mujocoimport>

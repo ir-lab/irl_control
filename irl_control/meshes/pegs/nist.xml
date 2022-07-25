@@ -1,0 +1,51 @@
+<mujocoimport>
+    <asset>
+        <mesh name="nist_male"    file="pegs/Waterproof_Male.stl" scale="1.5 1.5 1.5"/>
+        <!-- <mesh name="nist_female"  file="pegs/Waterproof_Female.stl" scale="1.5 1.5 1.5" /> -->
+        <mesh name="nist_female1"  file="pegs/Waterproof_Female_part_1.stl" scale="1.5 1.5 1.5" />
+        <mesh name="nist_female2"  file="pegs/Waterproof_Female_part_2.stl" scale="1.5 1.5 1.5" />
+        <mesh name="front"  file="pegs/front.stl" scale="1.5 1.5 1.5" />
+        <mesh name="back"  file="pegs/back.stl" scale="1.5 1.5 1.5" />
+        <mesh name="left"  file="pegs/left.stl" scale="1.5 1.5 1.5" />
+        <mesh name="right"  file="pegs/right.stl" scale="1.5 1.5 1.5" />
+    </asset>
+
+    <worldbody>
+        <body name="nist_male" pos="0.2 0.425 0.03577" euler="3.14 0 3.14">
+            <joint type="free" name="nist_male_joint"/>
+            <inertial pos="0 0 0" mass="0.1" diaginertia="0.1 0.1 0.1"/>
+            <geom type="box" size=".01 .01 .01" rgba="1 0 1 .5" contype="1" conaffinity="1"/>
+            <!-- <geom name="nist_male" type="mesh" mesh="nist_male" pos="0 0 0" material="silver" conaffinity="1" contype="1"/> -->
+        </body>
+        <!-- <body name="nist_female2" pos="0.2 0.575 0.0289">
+            <joint type="free" name="nist_female_joint"/>
+            <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            <geom name="nist_female" type="mesh" mesh="nist_female2" pos="0 0 0" material="black" conaffinity="1" contype="1"/>
+        </body> -->
+        <body name="nist_female1" pos="0.2 0.575 0.0289">
+            <joint type="free" name="nist_female_joint"/>
+            <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            <geom name="nist_female1" type="mesh" mesh="nist_female1" pos="0 0 0" material="black" conaffinity="1" contype="1"/>
+            <geom name="right" type="mesh" mesh="right" pos="0 0 0" material="black"/>
+            <geom name="back" type="mesh" mesh="back" pos="0 0 0" material="black"/>
+            <geom name="left" type="mesh" mesh="left" pos="0 0 0" material="black"/>
+            <geom name="front" type="mesh" mesh="front" pos="0 0 0" material="black"/>
+            <!-- <body name="front" pos="0.2 0.475 0.0289">
+                <joint type="slide" axis="0 0 1" name="front_joint"/>
+                <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            </body>
+            <body name="back" pos="0.2 0.575 0.0289">
+                <joint type="slide" axis="0 0 1" name="back_joint"/>
+                <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            </body>
+            <body name="left" pos="0.2 0.575 0.0289">
+                <joint type="slide" axis="0 0 1" name="left_joint"/>
+                <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            </body>
+            <body name="right" pos="0.2 0.575 0.0289">
+                <joint type="slide" axis="0 0 1" name="right_joint"/>
+                <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.1 0.1"/>
+            </body> -->
+        </body>
+    </worldbody>
+</mujocoimport>

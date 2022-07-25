@@ -1,0 +1,13 @@
+<mujocoimport>
+    <asset>
+        <mesh name="wall" file="wall/wallv3.stl" scale="1 1 1"/>
+    </asset>
+
+    <worldbody>
+        <body name="wall" pos="0.5 0.75 0" euler="0 0 1.5707963267">
+            
+            <inertial pos="0 0 0" mass="0.1" diaginertia="0.0001 0.0001 0.0001"/>
+            <geom name="wall" type="mesh" mesh="wall" mass="100" pos="0 0 0" material="grey" conaffinity="1" contype="1" solref="-900 -20"/>
+        </body>
+    </worldbody>
+</mujocoimport>

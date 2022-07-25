@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<mujoco>
+   <asset>
+      <mesh name="basket003" scale="2 1 1" file="basket/basket003.stl"/>
+      <mesh name="basket000" scale="2 1 1" file="basket/basket000.stl"/>
+      <mesh name="basket001" scale="2 1 1" file="basket/basket001.stl"/>
+      <mesh name="basket002" scale="2 1 1" file="basket/basket002.stl"/>
+      <mesh name="basket004" scale="2 1 1" file="basket/basket004.stl"/>
+   </asset>
+   <worldbody>
+      <body name="basket_whole" pos="0.0 0.6 0" quat="1.0 0 0 0">
+         <freejoint name="free_joint_basket"/>
+         <inertial pos="0 0 0" mass="2.0" diaginertia="0.1 0.1 0.1"/>
+         <geom name="basket003" type="mesh" mesh="basket003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="basket000" type="mesh" mesh="basket000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="basket001" type="mesh" mesh="basket001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="basket002" type="mesh" mesh="basket002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="basket004" type="mesh" mesh="basket004" pos="0 0 0" conaffinity="1" contype="1"/>
+      </body>
+   </worldbody>
+</mujoco>

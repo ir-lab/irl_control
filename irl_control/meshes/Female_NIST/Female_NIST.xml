@@ -1,0 +1,117 @@
+<?xml version="1.0" ?>
+<mujoco>
+   <asset>
+      <mesh name="Female_NIST_002r005002" file="Female_NIST/Female_NIST_002r.005002.stl"/>
+      <mesh name="Female_NIST_002r006005" file="Female_NIST/Female_NIST_002r.006005.stl"/>
+      <mesh name="Female_NIST_002r005000" file="Female_NIST/Female_NIST_002r.005000.stl"/>
+      <mesh name="Female_NIST_002r001005" file="Female_NIST/Female_NIST_002r.001005.stl"/>
+      <mesh name="Female_NIST_002r003003" file="Female_NIST/Female_NIST_002r.003003.stl"/>
+      <mesh name="Female_NIST_002r006009" file="Female_NIST/Female_NIST_002r.006009.stl"/>
+      <mesh name="Female_NIST_002r004008" file="Female_NIST/Female_NIST_002r.004008.stl"/>
+      <mesh name="Female_NIST_002r004003" file="Female_NIST/Female_NIST_002r.004003.stl"/>
+      <mesh name="Female_NIST_002r003000" file="Female_NIST/Female_NIST_002r.003000.stl"/>
+      <mesh name="Female_NIST_002r005003" file="Female_NIST/Female_NIST_002r.005003.stl"/>
+      <mesh name="Female_NIST_002r002003" file="Female_NIST/Female_NIST_002r.002003.stl"/>
+      <mesh name="Female_NIST_002r006002" file="Female_NIST/Female_NIST_002r.006002.stl"/>
+      <mesh name="Female_NIST_002r006004" file="Female_NIST/Female_NIST_002r.006004.stl"/>
+      <mesh name="Female_NIST_002r004007" file="Female_NIST/Female_NIST_002r.004007.stl"/>
+      <mesh name="Female_NIST_002r004001" file="Female_NIST/Female_NIST_002r.004001.stl"/>
+      <mesh name="Female_NIST_002r002000" file="Female_NIST/Female_NIST_002r.002000.stl"/>
+      <mesh name="Female_NIST_002r003006" file="Female_NIST/Female_NIST_002r.003006.stl"/>
+      <mesh name="Female_NIST_002r005004" file="Female_NIST/Female_NIST_002r.005004.stl"/>
+      <mesh name="Female_NIST_003" file="Female_NIST/Female_NIST_003.stl"/>
+      <mesh name="Female_NIST_002r003002" file="Female_NIST/Female_NIST_002r.003002.stl"/>
+      <mesh name="Female_NIST_002r002002" file="Female_NIST/Female_NIST_002r.002002.stl"/>
+      <mesh name="Female_NIST_002r001006" file="Female_NIST/Female_NIST_002r.001006.stl"/>
+      <mesh name="Female_NIST_002r005001" file="Female_NIST/Female_NIST_002r.005001.stl"/>
+      <mesh name="Female_NIST_002r004005" file="Female_NIST/Female_NIST_002r.004005.stl"/>
+      <mesh name="Female_NIST_002r003005" file="Female_NIST/Female_NIST_002r.003005.stl"/>
+      <mesh name="Female_NIST_002r005005" file="Female_NIST/Female_NIST_002r.005005.stl"/>
+      <mesh name="Female_NIST_001" file="Female_NIST/Female_NIST_001.stl"/>
+      <mesh name="Female_NIST_002r006007" file="Female_NIST/Female_NIST_002r.006007.stl"/>
+      <mesh name="Female_NIST_002r003009" file="Female_NIST/Female_NIST_002r.003009.stl"/>
+      <mesh name="Female_NIST_004" file="Female_NIST/Female_NIST_004.stl"/>
+      <mesh name="Female_NIST_002r004000" file="Female_NIST/Female_NIST_002r.004000.stl"/>
+      <mesh name="Female_NIST_002r001002" file="Female_NIST/Female_NIST_002r.001002.stl"/>
+      <mesh name="Female_NIST_002r001003" file="Female_NIST/Female_NIST_002r.001003.stl"/>
+      <mesh name="Female_NIST_002r003007" file="Female_NIST/Female_NIST_002r.003007.stl"/>
+      <mesh name="Female_NIST_002r004002" file="Female_NIST/Female_NIST_002r.004002.stl"/>
+      <mesh name="Female_NIST_002r001004" file="Female_NIST/Female_NIST_002r.001004.stl"/>
+      <mesh name="Female_NIST_002r003001" file="Female_NIST/Female_NIST_002r.003001.stl"/>
+      <mesh name="Female_NIST_002r003008" file="Female_NIST/Female_NIST_002r.003008.stl"/>
+      <mesh name="Female_NIST_002r005007" file="Female_NIST/Female_NIST_002r.005007.stl"/>
+      <mesh name="Female_NIST_002r002005" file="Female_NIST/Female_NIST_002r.002005.stl"/>
+      <mesh name="Female_NIST_002r001001" file="Female_NIST/Female_NIST_002r.001001.stl"/>
+      <mesh name="Female_NIST_002r002004" file="Female_NIST/Female_NIST_002r.002004.stl"/>
+      <mesh name="Female_NIST_002r004006" file="Female_NIST/Female_NIST_002r.004006.stl"/>
+      <mesh name="Female_NIST_002r006000" file="Female_NIST/Female_NIST_002r.006000.stl"/>
+      <mesh name="Female_NIST_002r005006" file="Female_NIST/Female_NIST_002r.005006.stl"/>
+      <mesh name="Female_NIST_002r006001" file="Female_NIST/Female_NIST_002r.006001.stl"/>
+      <mesh name="Female_NIST_002r002001" file="Female_NIST/Female_NIST_002r.002001.stl"/>
+      <mesh name="Female_NIST_002r006006" file="Female_NIST/Female_NIST_002r.006006.stl"/>
+      <mesh name="Female_NIST_002r006008" file="Female_NIST/Female_NIST_002r.006008.stl"/>
+      <mesh name="Female_NIST_002r003004" file="Female_NIST/Female_NIST_002r.003004.stl"/>
+      <mesh name="Female_NIST_002r004004" file="Female_NIST/Female_NIST_002r.004004.stl"/>
+      <mesh name="Female_NIST_002r006003" file="Female_NIST/Female_NIST_002r.006003.stl"/>
+      <mesh name="Female_NIST_002r001000" file="Female_NIST/Female_NIST_002r.001000.stl"/>
+   </asset>
+   <worldbody>
+      <body name="nist_female" pos="0.7 0.4 -0.00002">
+         <freejoint name="free_joint_female"/>
+         <inertial pos="0 0 0" mass="0.1" diaginertia="0.005 0.005 0.005"/>
+         <geom name="Female_NIST_002r005002" type="mesh" mesh="Female_NIST_002r005002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006005" type="mesh" mesh="Female_NIST_002r006005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005000" type="mesh" mesh="Female_NIST_002r005000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001005" type="mesh" mesh="Female_NIST_002r001005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003003" type="mesh" mesh="Female_NIST_002r003003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006009" type="mesh" mesh="Female_NIST_002r006009" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004008" type="mesh" mesh="Female_NIST_002r004008" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004003" type="mesh" mesh="Female_NIST_002r004003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003000" type="mesh" mesh="Female_NIST_002r003000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005003" type="mesh" mesh="Female_NIST_002r005003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002003" type="mesh" mesh="Female_NIST_002r002003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006002" type="mesh" mesh="Female_NIST_002r006002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006004" type="mesh" mesh="Female_NIST_002r006004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004007" type="mesh" mesh="Female_NIST_002r004007" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004001" type="mesh" mesh="Female_NIST_002r004001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002000" type="mesh" mesh="Female_NIST_002r002000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003006" type="mesh" mesh="Female_NIST_002r003006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005004" type="mesh" mesh="Female_NIST_002r005004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_003" type="mesh" mesh="Female_NIST_003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003002" type="mesh" mesh="Female_NIST_002r003002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002002" type="mesh" mesh="Female_NIST_002r002002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001006" type="mesh" mesh="Female_NIST_002r001006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005001" type="mesh" mesh="Female_NIST_002r005001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004005" type="mesh" mesh="Female_NIST_002r004005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003005" type="mesh" mesh="Female_NIST_002r003005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005005" type="mesh" mesh="Female_NIST_002r005005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_001" type="mesh" mesh="Female_NIST_001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006007" type="mesh" mesh="Female_NIST_002r006007" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003009" type="mesh" mesh="Female_NIST_002r003009" pos="0 0 0" conaffinity="1" contype="1"/>
+         <!-- <geom name="Female_NIST_004" type="mesh" mesh="Female_NIST_004" pos="0 0 0" conaffinity="1" contype="1"/> -->
+         <geom name="Female_NIST_002r004000" type="mesh" mesh="Female_NIST_002r004000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001002" type="mesh" mesh="Female_NIST_002r001002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001003" type="mesh" mesh="Female_NIST_002r001003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003007" type="mesh" mesh="Female_NIST_002r003007" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004002" type="mesh" mesh="Female_NIST_002r004002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001004" type="mesh" mesh="Female_NIST_002r001004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003001" type="mesh" mesh="Female_NIST_002r003001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003008" type="mesh" mesh="Female_NIST_002r003008" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005007" type="mesh" mesh="Female_NIST_002r005007" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002005" type="mesh" mesh="Female_NIST_002r002005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001001" type="mesh" mesh="Female_NIST_002r001001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002004" type="mesh" mesh="Female_NIST_002r002004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004006" type="mesh" mesh="Female_NIST_002r004006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006000" type="mesh" mesh="Female_NIST_002r006000" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r005006" type="mesh" mesh="Female_NIST_002r005006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006001" type="mesh" mesh="Female_NIST_002r006001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r002001" type="mesh" mesh="Female_NIST_002r002001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006006" type="mesh" mesh="Female_NIST_002r006006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006008" type="mesh" mesh="Female_NIST_002r006008" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r003004" type="mesh" mesh="Female_NIST_002r003004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r004004" type="mesh" mesh="Female_NIST_002r004004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r006003" type="mesh" mesh="Female_NIST_002r006003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Female_NIST_002r001000" type="mesh" mesh="Female_NIST_002r001000" pos="0 0 0" conaffinity="1" contype="1"/>
+      </body>
+   </worldbody>
+</mujoco>

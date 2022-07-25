@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<mujoco>
+   <asset>
+      <mesh name="Male_NIST_007" file="Male_NIST/Male_NIST_007.stl"/>
+      <mesh name="Male_NIST_002" file="Male_NIST/Male_NIST_002.stl"/>
+      <mesh name="Male_NIST_006C" file="Male_NIST/Male_NIST_006C.stl"/>
+      <mesh name="Male_NIST_005C" file="Male_NIST/Male_NIST_005C.stl"/>
+      <mesh name="Male_NIST_006" file="Male_NIST/Male_NIST_006.stl"/>
+      <mesh name="Male_NIST_003" file="Male_NIST/Male_NIST_003.stl"/>
+      <mesh name="Male_NIST_004" file="Male_NIST/Male_NIST_004.stl"/>
+      <mesh name="Male_NIST_001" file="Male_NIST/Male_NIST_001.stl"/>
+      <mesh name="Male_NIST_007C" file="Male_NIST/Male_NIST_007C.stl"/>
+      <mesh name="Male_NIST_005" file="Male_NIST/Male_NIST_005.stl"/>
+      <mesh name="Male_NIST_003C" file="Male_NIST/Male_NIST_003C.stl"/>
+   </asset>
+   <worldbody>
+      <body name="nist_male" pos="0.4 0.6 -0.0515">
+         <freejoint name="free_joint_male"/>
+         <inertial pos="0 0 0" mass="0.1" diaginertia="0.005 0.005 0.005"/>
+         <geom name="Male_NIST_007" type="mesh" mesh="Male_NIST_007" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_002" type="mesh" mesh="Male_NIST_002" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_006C" type="mesh" mesh="Male_NIST_006C" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_005C" type="mesh" mesh="Male_NIST_005C" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_006" type="mesh" mesh="Male_NIST_006" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_003" type="mesh" mesh="Male_NIST_003" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_004" type="mesh" mesh="Male_NIST_004" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_001" type="mesh" mesh="Male_NIST_001" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_007C" type="mesh" mesh="Male_NIST_007C" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_005" type="mesh" mesh="Male_NIST_005" pos="0 0 0" conaffinity="1" contype="1"/>
+         <geom name="Male_NIST_003C" type="mesh" mesh="Male_NIST_003C" pos="0 0 0" conaffinity="1" contype="1"/>
+      </body>
+   </worldbody>
+</mujoco>
