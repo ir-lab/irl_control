@@ -9,7 +9,7 @@ from transforms3d.utils import normalized_vector
 from transforms3d.affines import compose
 # from InverseKinematics import IK
 from irl_control.utils import Target
-from irl_control.input_devices import SpaceMouse
+from irl_control.input_devices.space_mouse import SpaceMouse
 
 class SpaceMouseDemo(MujocoApp):
     """

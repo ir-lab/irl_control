@@ -10,7 +10,7 @@ from typing import List, Tuple, Dict
 import threading
 from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
-from irl_control.input_devices import PSMoveInterface, MoveName
+from irl_control.input_devices.ps_move import PSMoveInterface, MoveName
 
 class Demo5(MujocoApp):
     def __init__(self, robot_config_file : str =None, scene_file : str = None):
