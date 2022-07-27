@@ -77,9 +77,9 @@ class GainTest(MujocoApp):
         return (right_wp, left_wp)
     
 
-    def gen_wobble_path(self) -> Tuple[np.ndarray, np.ndarray]:
+    def gen_waypoint_path(self) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Generates a wobble path.
+        Generates a back-and-forth path.
         """
         # Generate waypoints for the right arm
         right_wp = np.array([
@@ -106,8 +106,8 @@ class GainTest(MujocoApp):
             The name of the demo that should be run
         """
         # Choose demo type
-        if demo_type == 'wobble':
-            right_wps, left_wps = self.gen_wobble_path()
+        if demo_type == 'gain_test':
+            right_wps, left_wps = self.gen_waypoint_path()
         elif demo_type == 'figure8':
             right_wps, left_wps = self.gen_figure_eight_path()
         else:
