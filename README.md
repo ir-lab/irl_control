@@ -3,11 +3,11 @@
 IRL Control is a simulation and control framework for bimanual robot manipulation developed at the the Interactive Robotics Lab at Arizona State University. The framework provides a variety of features and algorithms for implementing and learning of bimanual control policies. In particular, it provides easy access to functions for collecting training data from input devices, generating low-level robot control signals, for visualization and debugging, as well as the evaluation of generated robot controllers. IRL Control uses MuJoCo as a simulation backbone to generate physically-correct simulations of the interactions between the robot, its environment, and manipulated objects. 
 
 ## Capabilities
-- Operational Space Control for multiple modalities (right arm, left arm, and rotating base stand)
+- Operational Space Control
 - Admittance Control for handling external forces to the robot
+- Rapid development of demos with a dual-arm UR5 robot through inheritance
 - Support for PS Move controllers and 3D Connexion Space Mouse to teleoperate the robot arms
-- Add new controlled devices to the robot/scene (handles book-keeping of the device's joint ids, Jacobians, forces, joint states, etc)
-- Quickly construct demos with the Dual UR5 by inheriting from the MujocoApp class
+- Supports easy addition of controlled devices to the scene (handles Jacobians, forces, joint states, etc)
 - YAML configuration files for setting the PID Gains, Min/Max velocities, and kinematic descriptions of the robot's controlled devices
 - Male/Female adapters with low-tolerance for performing insertion tasks (with convex decompositions from V-HACD)
 
