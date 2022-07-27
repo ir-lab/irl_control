@@ -7,8 +7,8 @@
 
     <include file="dual_ur5.xml"/>
 
-    <include file="../meshes/dual_pegs/grommet_11mm.xml"/>
+    <!-- <include file="../meshes/dual_pegs/grommet_11mm.xml"/>
     <include file="../meshes/dual_pegs/dual_pegs.xml"/>
     <include file="../meshes/Female_NIST/Female_NIST.xml"/>
-    <include file="../meshes/Male_NIST/Male_NIST.xml"/>
+    <include file="../meshes/Male_NIST/Male_NIST.xml"/> -->
 </mujoco>
