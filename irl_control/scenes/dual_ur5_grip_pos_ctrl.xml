@@ -41,22 +41,6 @@
     </asset>
 
     <worldbody>
-        <!-- <body name="x_dir" pos="0.5 0 0" mocap="true">
-            <geom type="box" size=".2 .01 .01" rgba="1 0 0 1" contype="2" conaffinity="2"/>
-        </body>
-        <body name="y_dir" pos="0 0.5 0" mocap="true">
-            <geom type="box" size=".01 .2 .01" rgba="0 1 0 1" contype="2" conaffinity="2"/>
-        </body> -->
-        <body name="hand_ur5right" pos="0 0 -0.15" mocap="true">
-            <geom type="box" size=".03 .03 .03" rgba="1 0 1 .5" contype="2" conaffinity="2"/>
-        </body>
-        <body name="hand_ur5left" pos="0 0 -0.15" mocap="true">
-            <geom type="box" size=".03 .04 .03" rgba="0 1 1 .5" contype="2" conaffinity="2"/>
-        </body>
-        <!-- <body name="plate" pos="0.5 0.5 0.1" mocap="true">
-            <geom type="box" size="0.1 .05 .01" rgba="0.8 0.4 0.4 1" contype="2" conaffinity="2"/>
-        </body> -->
-        
         <body name="origin_base" pos="0.0 0.0 0.0" euler="0 0 0">
             <inertial pos="0 0 0" mass="100.0" diaginertia="0.1 0.1 0.1"/>
             <geom name="ur_stand_ring" type="mesh" mesh="dual_ur_stand_ring" pos="0 0 0" material="grey" conaffinity="1" contype="2"/>

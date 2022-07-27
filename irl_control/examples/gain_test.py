@@ -12,7 +12,6 @@ to see how well the gains perform on stabilizing the base and the
 arm that does move rapidly. One of the arms in this demo will move
 wildly to test out this stabilization capability.
 """
-
 class GainTest(MujocoApp):
     """
     This class implements the OSC and Dual UR5 robot
@@ -175,8 +174,8 @@ class GainTest(MujocoApp):
         self.robot_data_thread.join()
 
 if __name__ == "__main__":
-    demo = GainTest(robot_config_file="DualUR5Scene.yaml", scene_file="place_object.xml")
+    demo = GainTest(robot_config_file="default_xyz.yaml", scene_file="gain_test_scene.xml")
     demo_name1 = "wobble"
     demo_name2 = "figure8"
-    demo.run(demo_name1, 20)
-    # demo.run(demo_name2, 10)
+    demo.run(demo_name1, 10)
+    demo.run(demo_name2, 10)

@@ -7,9 +7,9 @@ from irl_control import OSC, MujocoApp
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
 from transforms3d.utils import normalized_vector
 from transforms3d.affines import compose
-# from InverseKinematics import IK
 from irl_control.utils import Target
 from irl_control.input_devices.space_mouse import SpaceMouse
+# from InverseKinematics import IK
 
 class SpaceMouseDemo(MujocoApp):
     """
@@ -161,5 +161,5 @@ class SpaceMouseDemo(MujocoApp):
         time_thread.join()
 
 if __name__ == "__main__":
-    ur5 = SpaceMouseDemo(robot_config_file="DualUR5Scene.yaml", scene_file="main_dual_ur5.xml")
+    ur5 = SpaceMouseDemo(robot_config_file="default_xyz_abg.yaml", scene_file="space_mouse_scene.xml")
     ur5.run_demo(400)

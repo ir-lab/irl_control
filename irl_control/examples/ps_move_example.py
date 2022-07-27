@@ -12,7 +12,7 @@ from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
 from irl_control.input_devices.ps_move import PSMoveInterface, MoveName
 
-class Demo5(MujocoApp):
+class PSMoveExample(MujocoApp):
     def __init__(self, robot_config_file : str =None, scene_file : str = None):
         # Initialize the Parent class with the config file
         super().__init__(robot_config_file, scene_file)
@@ -36,8 +36,8 @@ class Demo5(MujocoApp):
         self.move_states = self.move_interface.move_states
         self.grip_pos = dict([(move_name, 0.0) for move_name in MoveName])
 
-        # self.robot_data_thread = threading.Thread(target=self.robot.start)
-        # self.robot_data_thread.start()
+        self.robot_data_thread = threading.Thread(target=self.robot.start)
+        self.robot_data_thread.start()
 
     def print_forces(self):
         grip_pos = dict([(move_name, 0.0) for move_name in MoveName])
@@ -55,7 +55,7 @@ class Demo5(MujocoApp):
                 self.grip_pos[move_name] = grip_pos[move_name]
             time.sleep(0.1)
 
-    def run_demo(self):
+    def run(self):
         # Start a timer for the demo
         targets = { 
             'ur5right' : Target(),
@@ -128,10 +128,9 @@ class Demo5(MujocoApp):
             self.viewer.render()
             
         # Join threads / Stop the simulator 
-        # self.robot.stop()
-        # self.robot_data_thread.join()
-        # time_thread.join()
+        self.robot.stop()
+        self.robot_data_thread.join()
 
 if __name__ == "__main__":
-    ur5 = Demo5(robot_config_file="Demo_PSMove.yaml", scene_file="ps_move_scene.xml")
-    ur5.run_demo()
+    demo = PSMoveExample(robot_config_file="default_xyz_abg.yaml", scene_file="ps_move_scene.xml")
+    demo.run()

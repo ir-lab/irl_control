@@ -1,17 +1,9 @@
 import numpy as np
-import mujoco_py as mjp
-from mujoco_py import load_model_from_path, MjSim, MjViewer, functions
+from mujoco_py import MjViewer, functions
 import threading
 from typing import Dict, Tuple
-from enum import Enum
-import irl_control
-from irl_control import OSC, MujocoApp, Device
-from irl_control.utils import Target, ControllerConfig
-import time
-import yaml
-import os
-from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
-from transforms3d.affines import compose
+from irl_control import OSC, MujocoApp
+from irl_control.utils import Target
 
 class AdmitTest(MujocoApp):
     """

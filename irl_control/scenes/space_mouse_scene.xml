@@ -1,0 +1,20 @@
+<mujoco>
+    <compiler angle="radian" meshdir="../meshes/"/>
+    <option timestep="0.001" solver="Newton" impratio="10" tolerance="1e-10"/>
+
+    <worldbody>
+        <body name="plate" pos="0.5 0.5 0.1" mocap="true">
+            <geom type="box" size="0.1 .05 .01" rgba="0.8 0.4 0.4 1" contype="2" conaffinity="2"/>
+        </body>
+        <body name="hand_ur5right" pos="0 0 -0.15" mocap="true">
+            <geom type="box" size=".03 .03 .03" rgba="1 0 1 .5" contype="2" conaffinity="2"/>
+        </body>
+        <body name="hand_ur5left" pos="0 0 -0.15" mocap="true">
+            <geom type="box" size=".03 .04 .03" rgba="0 1 1 .5" contype="2" conaffinity="2"/>
+        </body>
+    </worldbody>
+
+    <size njmax="8000" nconmax="4000"/>
+    <include file="world.xml"/>
+    <include file="dual_ur5.xml"/>
+</mujoco>
