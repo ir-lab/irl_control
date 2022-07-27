@@ -173,9 +173,12 @@ class GainTest(MujocoApp):
         self.robot.stop()
         self.robot_data_thread.join()
 
+# Main entrypoint
 if __name__ == "__main__":
+    # Initialize the gain test demo
     demo = GainTest(robot_config_file="default_xyz.yaml", scene_file="gain_test_scene.xml")
-    demo_name1 = "wobble"
-    demo_name2 = "figure8"
+    # Run the gain test
+    demo_name1 = "gain_test"
     demo.run(demo_name1, 10)
-    demo.run(demo_name2, 10)
+    # demo_name2 = "figure8"
+    # demo.run(demo_name2, 10)
