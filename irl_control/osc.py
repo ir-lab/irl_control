@@ -14,7 +14,7 @@ class OSC():
         This controller accepts targets as a input, and generates a control signal
         for the devices that are linked to the targets.
     """
-    def __init__(self, robot: Robot, sim, input_device_configs: Tuple[str, Dict], nullspace_config : Dict = None, use_g=True):
+    def __init__(self, robot: Robot, sim, input_device_configs: Tuple[str, Dict], nullspace_config : Dict = None, use_g=True, admittance=False):
         self.sim = sim
         self.robot = robot
         
@@ -26,6 +26,7 @@ class OSC():
             self.device_configs[dcnf[0]] = ControllerConfig(dcnf[1])
         self.nullspace_config = nullspace_config
         self.use_g = use_g
+        self.admittance = admittance
         
         # Obtain the controller configuration parameters
         # and calculate the task space gains
@@ -139,6 +140,7 @@ class OSC():
         uv_all = np.dot(M, dq)
         u_all = np.zeros(self.robot.num_joints_total)
         u_task_all = np.array([])
+        ext_f = np.array([])
 
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
@@ -161,10 +163,15 @@ class OSC():
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
                 u_task[device.ctrlr_dof] += kv * diff
             
+            force = np.append(deive.get_force(),device.get_torque())
+            ext_f = np.append(ext_f,force[device.ctrl_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
         # Transform task space signal to joint space
-        u_all -= np.dot(J.T, np.dot(Mx, u_task_all))
+        if self.admittance is true:
+            u_all -= np.dot(J.T, np.dot(Mx, u_task_all+ext_f))
+        else:
+            u_all -= np.dot(J.T, np.dot(Mx, u_task_all))
         
         # Apply gravity forces
         if self.use_g:
