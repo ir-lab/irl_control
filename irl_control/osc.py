@@ -163,12 +163,12 @@ class OSC():
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
                 u_task[device.ctrlr_dof] += kv * diff
             
-            force = np.append(deive.get_force(),device.get_torque())
-            ext_f = np.append(ext_f,force[device.ctrl_dof])
+            force = np.append(device.get_force(),device.get_torque())
+            ext_f = np.append(ext_f,force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
         # Transform task space signal to joint space
-        if self.admittance is true:
+        if self.admittance is True:
             u_all -= np.dot(J.T, np.dot(Mx, u_task_all+ext_f))
         else:
             u_all -= np.dot(J.T, np.dot(Mx, u_task_all))
