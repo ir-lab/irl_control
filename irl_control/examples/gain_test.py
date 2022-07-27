@@ -14,7 +14,7 @@ wildly to test out this stabilization capability.
 """
 class GainTest(MujocoApp):
     """
-    This class implements the OSC and Dual UR5 robot
+    Implements the OSC and Dual UR5 robot
     """
     def __init__(self, robot_config_file : str =None, scene_file : str = None):
         # Initialize the Parent class with the config file
