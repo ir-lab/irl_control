@@ -21,8 +21,6 @@ In [this example](irl_control/examples/insertion_task.py), the Dual UR5 Robot in
 
 <img src="img/insertion_task.gif" alt="drawing"/>
 
-<br>
-
 ### PS Move Teleoperation
 In [this example](irl_control/examples/ps_move_example.py), the user teleoperates the robot for picking up objects in the scene. The PS Move controllers allow for opening and closing the gripper and controlling the desired position of the end effector, which the robot moves to when the trigger is pressed. The controllers have a one-to-one correspondance with each robot arm, so that it is possible to extend this example to more complex (and jointly controlled) bi-manual manipulation tasks.
 
