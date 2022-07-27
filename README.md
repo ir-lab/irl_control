@@ -8,8 +8,8 @@ IRL Control is a simulation and control framework for bimanual robot manipulatio
 - Rapid development of demos with a dual-arm UR5 robot through inheritance
 - Support for PS Move controllers and 3D Connexion Space Mouse to teleoperate the robot arms
 - Supports easy addition of controlled devices to the scene (handles Jacobians, forces, joint states, etc)
-- YAML configuration files for setting the PID Gains, Min/Max velocities, and kinematic descriptions of the robot's controlled devices
-- Male/Female adapters with low-tolerance for performing insertion tasks (with convex decompositions from V-HACD)
+- YAML configuration files for setting the PID Gains, Min/Max velocities, and kinematic descriptions of the robot devices
+- NIST Male/Female adapters with low-tolerance for performing insertion tasks
 
 ## Examples
 
