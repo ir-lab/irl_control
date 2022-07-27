@@ -32,3 +32,8 @@ In [this example](irl_control/examples/ps_move_example.py), the user teleoperate
 The objective for [this example](irl_control/examples/gain_test.py) is to evaluate PID gains to ensure that the base stand and a desired arm (the arm on the left in this case) are stable under high torques. It can be seen that the arm on the right is vigorously moving back-and-forth in order to apply a high torque to the rest of the robot's body. Notably, the base joint and left arm are stable under these forces, reinforcing the notion that the chosen gains are adequate for tasks which require an arm to be steady under high external forces. 
 
 <img src="img/gain_test.gif" alt="drawing"/>
+
+### Addmitance Test
+[This example](irl_control/examples/admit_test.py) demonstrates the Admittance Controller on the DualUR5 robot. In this example both the arms are given a fixed position and an external force is applied to the left arm end-effector. The arm acts as a spring-damper system whos stifness and damping can be changed by changing Kp and Kd in the controller config file.
+
+<img src="img/admit_test.gif" alt="drawing"/>

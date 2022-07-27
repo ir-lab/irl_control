@@ -13,11 +13,10 @@ import os
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
 from transforms3d.affines import compose
 
-
-
-
-
 class AdmitTest(MujocoApp):
+    """
+    This class implements the Admittance Controller on Dual UR5 robot
+    """
     def __init__(self, robot_config_file: str = None, scene_file: str = None, active_arm: str = 'right'):
         # Initialize the Parent class with the config file
         super().__init__(robot_config_file, scene_file)
@@ -43,12 +42,19 @@ class AdmitTest(MujocoApp):
         self.viewer = MjViewer(self.sim)
     
     def gen_target(self) -> Tuple[np.ndarray, np.ndarray]:  #Generates the target position for both arms 
+        """
+        Generates the target position for both arms 
+        """    
         right_wp = np.array([0.3, 0.46432, 0.5])
-
         left_wp = np.array([-0.3, 0.46432, 0.5])
         return (right_wp, left_wp)
 
     def run(self):
+        """
+        This is the main function that gets called. Uses the 
+        Admittance Controller  to control the DualUR5
+        and adjust to the external forces acting on the end effector.
+        """
         #start the count and timer
         count = 0
         time_thread = threading.Thread(target=self.sleep_for, args=(50,))
@@ -79,17 +85,14 @@ class AdmitTest(MujocoApp):
             #Apply external force on left end effector
             self.sim.data.xfrc_applied[38] = [0,0,0,0,0,0]
             if count > 3000 and count < 5000:
-                self.sim.data.xfrc_applied[38] = [20,0,0,0,0,0]
-                
+                self.sim.data.xfrc_applied[38] = [20,0,0,0,0,0]   
             self.sim.step()
             self.viewer.render()
             functions.mj_inverse(self.model,self.sim.data)
-
-        
         time_thread.join()
         self.robot_data_thread.join()
         glfw.destroy_window(self.viewer.window)
         
 if __name__ == "__main__":
-    ur5 = AdmitTest(robot_config_file="DualUR5Scene.yaml", scene_file="main_dual_ur5.xml")
+    ur5 = AdmitTest(robot_config_file="default_xyz_abg.yaml", scene_file="admit_test_scene.xml")
     ur5.run()
