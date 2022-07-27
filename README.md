@@ -1,6 +1,6 @@
 ## IRL Control
 
-IRL Control is a simulation and control framework for bimanual robot manipulation developed at the the Interactive Robotics Lab at Arizona State University. The framework provides a variety of features and algorithms for implementing and learning of bimanual control policies. In particular, it provides easy access to functions for collecting training data from input devices, generating low-level robot control signals, for visualization and debugging, as well as the evaluation of generated robot controllers. IRL Control uses MuJoCo as a simulation backbone to generate physically-correct simulations of the interactions between the robot, its environment, and manipulated objects. 
+IRL Control is a simulation and control framework for bimanual robot manipulation developed at the Interactive Robotics Lab at Arizona State University. The framework provides a variety of features and algorithms for implementing and learning of bimanual control policies. In particular, it provides easy access to functions for collecting training data from input devices, generating low-level robot control signals, for visualization and debugging, as well as the evaluation of generated robot controllers. IRL Control uses MuJoCo as a simulation backbone to generate physically-correct simulations of the interactions between the robot, its environment, and manipulated objects. 
 
 ## Capabilities
 - Operational Space Control
@@ -28,3 +28,7 @@ In this example, the user teleoperates the robot for picking up objects in the s
 
 <img src="img/ps_move_demo.gif" alt="drawing"/>
 
+### PID Gain Test
+The objective for this test is to evaluate PID gains to ensure that the base stand and a desired arm (the arm on the left in this case) are stable under high torques. It can be seen that the arm on the right is vigorously moving back-and-forth in order to apply a high torque to the rest of the robot's body. Notably, the base joint and left arm are stable under these forces, reinforcing the notion that the chosen gains are adequate for tasks which require an arm to be steady under high external forces. 
+
+<img src="img/gain_test.gif" alt="drawing"/>
