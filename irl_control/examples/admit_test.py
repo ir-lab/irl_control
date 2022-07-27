@@ -45,55 +45,41 @@ class AdmitTest(MujocoApp):
     def gen_target(self) -> Tuple[np.ndarray, np.ndarray]:  #Generates the target position for both arms 
         right_wp = np.array([0.3, 0.46432, 0.5])
 
-        left_wp = np.array([
-            [-0.3, 0.46432, 0.5],
-        ])
+        left_wp = np.array([-0.3, 0.46432, 0.5])
         return (right_wp, left_wp)
 
     def run(self):
+        #start the count and timer
         count = 0
         time_thread = threading.Thread(target=self.sleep_for, args=(50,))
         time_thread.start()
         threshold_ee = 0.1
-
+        #Define targets for both arms
         targets = { 
             'ur5right' : Target(), 
             'ur5left' : Target(),  
         }
-        
+        #Get the targets for both arms
         right_wps, left_wps = self.gen_target()
         ur5right = self.robot.sub_devices_dict['ur5right']
         ur5left = self.robot.sub_devices_dict['ur5left']
-        
-        right_wp_index = 0
-        left_wp_index = 0
-        
-            
         while self.timer_running:
+            #set the targets position and orientation of both arms
             count += 1
-            targets['ur5right'].xyz = right_wps[right_wp_index]
-            targets['ur5left'].xyz = left_wps[left_wp_index]
+            targets['ur5right'].xyz = right_wps
+            targets['ur5left'].xyz = left_wps
             targets['ur5left'].abg = np.array([0,-1*np.pi/2,0])
-            
-            self.sim.data.set_mocap_pos('target_red', right_wps[right_wp_index])
-            self.sim.data.set_mocap_pos('target_blue', left_wps[left_wp_index])
-
+            #set the mocap position to target position
+            self.sim.data.set_mocap_pos('target_red', right_wps)
+            self.sim.data.set_mocap_pos('target_blue', left_wps)
+            #Genetrate the admittance control output
             ctrlr_output = self.controller.generate(targets)
-            #print('control',ctrlr_output)
             for force_idx, force  in zip(*ctrlr_output):
                 self.sim.data.ctrl[force_idx] = force
-            
-            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state('ee_xyz') - targets['ur5left'].xyz)
-            
+            #Apply external force on left end effector
             self.sim.data.xfrc_applied[38] = [0,0,0,0,0,0]
             if count > 3000 and count < 5000:
-                self.sim.data.xfrc_applied[38] = [20,0,0,0,0,0]  #32 #36"""
-                
-            if self.errors['ur5left']  < threshold_ee:
-                if left_wp_index < left_wps.shape[0] - 1 and count > 5000:
-                    left_wp_index += 1
-                else:
-                    left_wp_index = 0
+                self.sim.data.xfrc_applied[38] = [20,0,0,0,0,0]
                 
             self.sim.step()
             self.viewer.render()
@@ -103,6 +89,7 @@ class AdmitTest(MujocoApp):
         time_thread.join()
         self.robot_data_thread.join()
         glfw.destroy_window(self.viewer.window)
-
-ur5 = AdmitTest(robot_config_file="DualUR5Scene.yaml", scene_file="main_dual_ur5.xml")
-ur5.run()
+        
+if __name__ == "__main__":
+    ur5 = AdmitTest(robot_config_file="DualUR5Scene.yaml", scene_file="main_dual_ur5.xml")
+    ur5.run()

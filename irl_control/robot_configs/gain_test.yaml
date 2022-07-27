@@ -1,4 +1,3 @@
-xml_file: "scenes/main_dual_ur5.xml"
 devices:
     -   id: 0
         name: "base"
