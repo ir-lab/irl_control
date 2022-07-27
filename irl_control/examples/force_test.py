@@ -1,11 +1,9 @@
 import numpy as np
-import mujoco_py as mjp
-from mujoco_py import load_model_from_path, MjSim, MjViewer, functions
+from mujoco_py import MjViewer, functions
 import threading
 from typing import Dict, Tuple
-import irl_control
-from irl_control import OSC, MujocoApp, Device
-from irl_control.utils import Target, ControllerConfig
+from irl_control import OSC, MujocoApp
+from irl_control.utils import Target
 import csv
 
 class ForceTest(MujocoApp):
