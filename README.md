@@ -35,3 +35,8 @@ The objective for [this example](irl_control/examples/gain_test.py) is to evalua
 [This example](irl_control/examples/admit_test.py) demonstrates the Admittance Controller on the DualUR5 robot. In this example, both of the arms are given a fixed position and an external force is applied to the left arm end-effector. The arm acts as a spring-damper system whose stifness and damping can be changed by modifying the Kp and Kd parameters in the controller config file.
 
 <img src="img/admit_test.gif" alt="drawing"/>
+
+### Force Test
+In [this example](irl_control/examples/force_test.py) used to demonstrate how the admittance control react to the external environment, here the target position of the left arm is given such that the hit the wall, we can see that the arm bounces of the wall insteading of pushing against the wall with large force.
+
+<img src="img/force_test.gif" alt="drawing"/>
