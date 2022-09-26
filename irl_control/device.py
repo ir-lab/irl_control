@@ -99,6 +99,8 @@ class Device():
         if self.name == "ur5left":
             force = np.matmul(self._get_R(),self.sim.data.sensordata[6:9])
             return force
+        else:
+            return np.zeros(3)
             
     def get_torque(self):
         if self.name == "ur5right":
@@ -107,6 +109,8 @@ class Device():
         if self.name == "ur5left":
             force = np.matmul(self._get_R(),self.sim.data.sensordata[9:12])
             return force
+        else:
+            return np.zeros(3)
     
     def get_state(self, state_var: str):
         """
