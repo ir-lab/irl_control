@@ -1,7 +1,4 @@
 from setuptools import setup, find_packages
-from setuptools.extension import Extension
-import numpy as np
-import sys
 import runpy
 import pathlib
 
