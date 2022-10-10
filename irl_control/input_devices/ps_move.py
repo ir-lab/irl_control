@@ -1,5 +1,4 @@
 import sys
-from traitlets import Bool, Int
 from transforms3d.euler import quat2euler, euler2quat
 import time
 import numpy as np
@@ -36,11 +35,11 @@ class MoveState():
         self.values: Dict[str, Any] = dict()
         self.values['pos']: np.ndarray = np.zeros(3)
         self.values['quat']: np.ndarray = np.zeros(4)
-        self.values['rumble']: Int = 0
-        self.values['trigger']: Bool = False
-        self.values['square']: Bool = False
-        self.values['triangle']: Bool = False
-        self.values['circle']: Bool = False
+        self.values['rumble']: int = 0
+        self.values['trigger']: bool = False
+        self.values['square']: bool = False
+        self.values['triangle']: bool = False
+        self.values['circle']: bool = False
     
     def get(self, key: str):
         return self.values[key]
@@ -50,7 +49,7 @@ class MoveState():
 
 
 class PSMoveInterface():
-    def __init__(self, multiprocess: Bool = False):
+    def __init__(self, multiprocess: bool = False):
         if psmove.count_connected() < 1:
             print('No controller connected')
             sys.exit(1)

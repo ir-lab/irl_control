@@ -2,7 +2,6 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 import xml.etree.ElementTree as ET
 import os
 from xml.dom import minidom
-import lxml.etree as etree
 
 folder = 'basket'
 files = [x for x in os.listdir(folder) if x.endswith(".stl")]
