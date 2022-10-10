@@ -1,0 +1,7 @@
+name: irl_control
+dependencies:
+  - lxml~=4.9.1
+  - numpy~=1.19.5
+  - PyYAML~=6.0
+  - traitlets~=5.4.0
+  - transforms3d~=0.4.1

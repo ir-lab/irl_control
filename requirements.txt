@@ -1,8 +1,5 @@
-lxml==4.2.1
-pymsgbox==1.0.7 
-numpy==1.20.3
-PyYAML==6.0
-setuptools==39.0.1
-traitlets==4.3.2
-transforms3d==0.3.1
-sympy
+lxml~=4.9.1
+numpy~=1.19.5
+PyYAML~=6.0
+traitlets~=5.4.0
+transforms3d~=0.4.1
