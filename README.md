@@ -40,3 +40,14 @@ The objective for [this example](irl_control/examples/gain_test.py) is to evalua
 In [this example](irl_control/examples/force_test.py) used to demonstrate how the admittance control react to the external environment, here the target position of the left arm is given such that the hit the wall, we can see that the arm bounces of the wall insteading of pushing against the wall with large force.
 
 <img src="img/force_test.gif" alt="drawing"/>
+
+
+## Comments... 
+- The base needs to be actively controlled given two too center points
+- There needs to be the standard approach of state() and action() methods 
+- There needs to be some common "get state" method
+- Gripper control is unintuitve 
+- While the base is part of the kinematic chain, it is weird that if the device "left_ur5", the base's joint's are part of it. It should only be the UR5
+- You need to build a proper state machine
+- The insertion_task needs to be converted into a generic base-class. Configuring which arms need to be used should go into the yaml
+- 

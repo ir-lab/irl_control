@@ -55,7 +55,7 @@
                 <joint name="ur_stand_joint" axis="0 0 1" pos="0 0 0" limited="false" range="-6.28319 6.28319"/>
                 <body name="ur_stand_dummy" pos="0 0 0" euler="0 0 0"></body>
 
-                <!-- <joint name="ur_stand_joint_sliding" axis="0 0 1" pos="0 0 0" type="slide"/> -->
+                <joint name="ur_stand_joint_sliding" axis="0 0 1" pos="0 0 0" type="slide"/>
                 <inertial pos="0 0 0" mass="20.0" diaginertia="0.25 0.25 0.25"/>
                 <geom name="ur_stand_base" type="mesh" mesh="dual_ur_stand" pos="0 0 0" material="grey" conaffinity="1" contype="2"/>
             

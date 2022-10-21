@@ -1,0 +1,38 @@
+device_config:
+    devices: ["base", "ur5left", "ur5right"]
+    controllers: ["osc0", "osc2", "osc2"]
+    control_type: ["joint", "task", "task"]
+
+iros2022_action_objects:
+    male_object:
+        joint_name: "free_joint_quad_grommet"
+        hover_offset: [[0, 0, 0.2], [0, 0, 0]]
+        grip_offset: [[0,0,0], [0.375, 0.3, 0.25], [0.4, -0.15, 0.25]]
+        initial_pos_xyz: [0.5, 0.0, 0.0]
+        initial_pos_quat: [1.0, 0, 0, 0.3]
+        grip_yaw: 90
+    female_object: 
+        joint_name: "free_joint_quad_peg"
+        hover_offset: [[0, 0, 0.23], [0, 0, 0]]
+        hover_offset_lift: [[0, 0, 0.25], [0, 0, 0]]
+        insert_offset: [[0, 0, 0.18], [0, 0, 0]]
+        initial_pos_xyz: [-0.1, 0.6, 0.0]
+        initial_pos_quat: [1.0, 0, 0, 1.0]
+        grip_yaw: 90
+
+iros2022_action_sequence:
+    # Hover above the male object
+    -   action: WP
+        target_xyz: [[0,0,0], [0.375, 0.3, 0.35], [0.625, -0.3, 0.35]]
+        target_quat: [[0.707, 0, 0, -0.707], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Initialization
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: -0.2
+        gripper_duration: 1.0
+        name: Open-Grippers
+    # Go above the handles
+    -   action: WP
+        target_xyz: male_object.grip_offset
+        target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Pre-Grasp

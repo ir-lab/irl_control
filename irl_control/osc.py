@@ -112,12 +112,14 @@ class OSC():
         
         # Calculate a,b,g error
         if np.sum(device.ctrlr_dof_abg) > 0:
-            q_d = normalized_vector(euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz"))
+            t_rot = target.getRot()
+            if not target.use_quat:
+                t_rot = euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz")
+            q_d = normalized_vector(t_rot)
             q_r = np.array(qmult(q_d, qconjugate(device.get_state('ee_quat'))))
             u_task[3:] =  quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
         return u_task
     
-
     def generate(self, targets: Dict[str, Target]):
         """
             Generate forces for the corresponding devices which are in the 

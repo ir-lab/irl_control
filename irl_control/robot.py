@@ -67,3 +67,18 @@ class Robot():
 
     def get_device(self, device_name: str) -> Device:
         return self.sub_devices_dict[device_name]
+
+    def getState(self):
+        """
+        Get's the state of all the devices connected
+        """
+        targets = ["q", "dq", "ee_xyz", "ee_quad"]
+        state = {}
+        state["devices"] = self.sub_devices_dict.keys()
+        for device in state["devices"]:
+            for target in targets:
+                joint_ids = self.sub_devices_dict[device].get_actuator_joint_ids()
+                state[target + "_" + device] = self.get_device(device).get_state(target, joint_ids)
+            state["force_" + device] = self.get_device(device).get_force()
+            state["torque_" + device] = self.get_device(device).get_torque()
+        return state

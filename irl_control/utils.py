@@ -13,6 +13,22 @@ class Target():
         self.abg = np.array(xyz_abg)[3:]
         self.xyz_vel = np.array(xyz_abg_vel)[:3]
         self.abg_vel = np.array(xyz_abg_vel)[3:]
+        self.quat = np.array([1, 0, 0, 0])
+        self.use_quat = False
+
+    def getRot(self):
+        if self.use_quat:
+            return self.quat
+        return self.abg
+    
+    def setAllQuat(self, x, y, z, w, rx, ry, rz):
+        self.use_quat = True
+        self.xyz = np.asarray([x, y, z])
+        self.quat = np.asarray([w, rx, ry, rz])
+    
+    def setQuat(self, w, rx, ry, rz):
+        self.use_quat = True
+        self.quat = np.asarray([w, rx, ry, rz])
 
 class ControllerConfig():
     def __init__(self, ctrlr_dict):

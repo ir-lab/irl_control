@@ -21,7 +21,7 @@ class Device():
         self.num_gripper_joints = device_yml['num_gripper_joints']
         
         # Initialize dicts to keep track of the state variables and locks
-        self.state_vars = ['q', 'ee_xyz', 'ee_quat']
+        self.state_vars = ['q', 'dq', 'dqq', 'ee_xyz', 'ee_quat']
         self.state = dict()
         self.locks = dict()
         for var in self.state_vars:
@@ -54,9 +54,9 @@ class Device():
         self.joint_ids = np.array(joint_ids[::-1])
         
         gripper_start_idx = self.joint_ids[-1] + 1
-        gripper_ids = np.arange(gripper_start_idx, 
+        self.gripper_ids = np.arange(gripper_start_idx, 
                                 gripper_start_idx + self.num_gripper_joints)
-        self.joint_ids_all = np.hstack([self.joint_ids, gripper_ids])
+        self.joint_ids_all = np.hstack([self.joint_ids, self.gripper_ids])
 
         # Find the actuator and control indices
         actuator_trnids = model.actuator_trnid[:,0]
@@ -112,14 +112,22 @@ class Device():
         else:
             return np.zeros(3)
     
-    def get_state(self, state_var: str):
+    def get_state(self, state_var: str, joint_ids: list = []):
         """
             Get the state of the device corresponding to the key value (if exists)
         """
+        if len(joint_ids) == 0:
+            joint_ids = self.joint_ids_all
+        if state_var not in self.locks.keys():
+            return None
         self.locks[state_var].acquire()
         value = None
         if state_var == 'q':
-            value = self.sim.data.qpos[self.joint_ids_all]
+            value = self.sim.data.qpos[joint_ids]
+        elif state_var == "dq":
+            value = self.sim.data.qvel[joint_ids]
+        elif state_var == "ddq":
+            value = self.sim.data.qacc[joint_ids]
         elif state_var == 'ee_xyz':
             value = self.sim.data.get_body_xpos(self.EE)
         elif state_var == 'ee_quat':
@@ -134,3 +142,12 @@ class Device():
         """
         for var in self.state_vars:
             self.get_state(var)
+
+    def get_all_joint_ids(self):
+        return self.joint_ids_all
+    
+    def get_actuator_joint_ids(self):
+        return self.joint_ids
+    
+    def get_gripper_joint_ids(self):
+        return self.gripper_ids
