@@ -34,7 +34,7 @@ controller_configs:
         kp: 2000
         kv: 20
         ki: 1
-        ko: 2000
+        ko: 75
     -   name: "osc1"
         kp: 200
         kv: 50
@@ -44,6 +44,6 @@ controller_configs:
         kp: 200
         kv: 20
         ki: 1
-        ko: 200
+        ko: 75
     -   name: "nullspace"
         kv: 10

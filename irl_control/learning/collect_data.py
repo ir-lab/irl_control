@@ -47,11 +47,15 @@ class CollectData(ControlBase):
         super().__init__(self.action_config["device_config"], robot_config_file, scene_file)
            
     def run(self, demo_type: str, demo_duration: int):        
-        action_sequence_name = 'iros2022_action_sequence'
         action_object_names = ['iros2022_action_objects']
         self.action_objects = self.action_config[action_object_names[0]]
         self.initialize_action_objects()
-        self.run_sequence(self.action_config[action_sequence_name])
+        self.run_sequence(self.action_config['iros2022_pickup_sequence'])
+
+        self.run_sequence(self.action_config['iros2022_demo_sequence'])
+        
+
+
  
         # # counters/indexers used to keep track of waypoints
         # right_wp_idx = 0

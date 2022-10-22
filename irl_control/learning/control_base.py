@@ -23,6 +23,7 @@ class Action(Enum):
     """
     WP = 0,
     GRIP = 1
+    INTERP = 2
 
 """
 The purpose of this example is to test out the robot configuration
@@ -69,7 +70,7 @@ class ControlBase(MujocoApp):
         self.viewer.cam.distance = self.model.stat.extent*1.5
         self.action_map = self.get_action_map()
         self.DEFAULT_PARAMS: Dict[Action, Dict] = dict([(action, self.get_default_action_ctrl_params(action)) for action in Action])
-        self.gripper_force = -0.1
+        self.gripper_force = 0.00
 
     def grip(self, params):
         """
@@ -109,13 +110,34 @@ class ControlBase(MujocoApp):
                 'gripper_force' : -0.08,
                 'gripper_duation' : 1.0
             }
+        # Interpolation action defaults
+        elif action == Action.INTERP:
+            param_dict = {
+                'method' : "linear",
+                'steps' : 2
+            }
         return param_dict
 
-    def is_done(self, max_error):
+    def is_done(self, max_error, step):
+        # Based on steps
+        if step < 25:
+            return False
+        # Based on velocity
+        state = self.robot.getState()
+        vel = []
+        for device_name in state["devices"]:
+            vel += state["dq_" + device_name].tolist()
+        vel = np.asarray(vel)
+        if np.all(np.isclose(np.zeros_like(vel), vel, rtol=max_error, atol=max_error)):
+            return True
+        return False
+
+        # Based on error:
+        done = True
         for _, err in self.errors.items():
             if err > max_error:
-                return False
-        return True
+                done = False       
+        return done
 
     def go_to_waypoint(self, params):
         """
@@ -129,10 +151,12 @@ class ControlBase(MujocoApp):
         # Apply default parameter values to those that are unspecified
         self.update_action_ctrl_params(params, Action.WP)
         # Iterate the controller until the desired level of error is achieved
-        while not self.is_done(params["max_error"]):
+        step = 0
+        while not self.is_done(params["max_error"], step):
+            step += 1
             # Limit the max velocity of the robot according to the given params
-            # self.active_arm.max_vel[0] = max(params['min_speed_xyz'], 
-            #     min(params['max_speed_xyz'], params['kp']*self.errors["ur5right"]))
+            for device_name in self.errors.keys():
+                self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
             ctrlr_output = self.controller.generate(self.targets)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
 
@@ -254,9 +278,54 @@ class ControlBase(MujocoApp):
         """
         action_map: Dict[Action, function] = {
             Action.WP : self.go_to_waypoint,
-            Action.GRIP : self.grip
+            Action.GRIP : self.grip,
+            Action.INTERP : self.interpolate_waypoint,
         }
         return action_map
+    
+    def interpolate_dof(self, data):
+        for device in range(data.shape[1]):
+            for dof in range(data.shape[2]):
+                data[:, device, dof] = np.linspace(data[0,device,dof],data[-1,device,dof],data.shape[0])
+        return data
+    
+    def interpolate_waypoint(self, params):
+        # Figure out where we currently are
+        current_pos = []
+        current_rot = []
+        for device_name in self.errors.keys():
+            current_pos.append(self.robot.get_device(device_name).get_state('ee_xyz'))
+            rot = np.asarray(self.robot.get_device(device_name).get_state('ee_quat'))
+            if rot[0] < 0:
+                rot *= -1 # Make sure the w component is always positive
+            current_rot.append(rot)
+        current_pos = np.asarray(current_pos)
+        current_rot = np.asarray(current_rot)
+
+        # Interpolate the thing...
+        steps = params["steps"]
+        pos_wps = np.zeros((steps, current_pos.shape[0], current_pos.shape[1]))
+        rot_wps = np.zeros((steps, current_rot.shape[0], current_rot.shape[1]))
+        pos_wps[0,:,:] = np.asarray(current_pos)
+        pos_wps[-1,:,:] = np.asarray(params["target_xyz"])
+        rot_wps[0,:,:] = np.asarray(current_rot)
+        rot_wps[-1,:,:] = np.asarray(params["target_quat"])
+
+        pos_wps = self.interpolate_dof(pos_wps)
+        rot_wps = self.interpolate_dof(rot_wps)
+
+        # Create parameters for waypoint
+        for i in range(steps):
+            wp_params = params.copy()
+            wp_params["action"] = "WP"
+            wp_params["target_xyz"] = pos_wps[i].tolist()
+            wp_params["target_quat"] = rot_wps[i].tolist()
+            wp_params["name"] = params["name"] + "_Step_" + str(i)
+            print("Interpolated Waypoint", i)
+            for key in self.errors.keys():
+                self.errors[key] = np.inf
+            self.go_to_waypoint(wp_params)
+
 
     def get_action_config(self, config_file: str):
         """
@@ -295,6 +364,8 @@ class ControlBase(MujocoApp):
             return Action.WP
         elif string == 'GRIP':
             return Action.GRIP
+        elif string == "INTERP":
+            return Action.INTERP
 
     def run_sequence(self, action_sequence):
         # self.start_pos = np.copy(self.active_arm.get_state('ee_xyz'))
