@@ -7,6 +7,7 @@ from transforms3d.utils import normalized_vector
 from typing import Dict, Tuple
 from irl_control import Robot, Device
 from irl_control.utils import ControllerConfig, Target
+from irl_control.device import StateVar
 
 class OSC():
     """
@@ -107,7 +108,7 @@ class OSC():
         u_task = np.zeros(6)
         # Calculate x,y,z error
         if np.sum(device.ctrlr_dof_xyz) > 0:
-            diff = device.get_state('ee_xyz') - target.xyz
+            diff = device.get_state(StateVar.EE_XYZ) - target.xyz
             u_task[:3] = diff
         
         # Calculate a,b,g error
@@ -116,7 +117,7 @@ class OSC():
             if not target.use_quat:
                 t_rot = euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz")
             q_d = normalized_vector(t_rot)
-            q_r = np.array(qmult(q_d, qconjugate(device.get_state('ee_quat'))))
+            q_r = np.array(qmult(q_d, qconjugate(device.get_state(StateVar.EE_QUAT))))
             u_task[3:] =  quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
         return u_task
     
@@ -129,6 +130,7 @@ class OSC():
             ----------
             targets: dict of device names mapping to Target objects
         """
+        assert self.robot.is_running(), "Robot must be running!"
         # Get the Jacobian for the all of devices passed in
         J, J_idxs = self.robot.get_jacobian(targets.keys())
         # Get the inertia matrix for the robot
