@@ -31,10 +31,10 @@ robots:
         device_ids: [0,1,2]
 controller_configs:
     -   name: "osc0"
-        kp: 2000
+        kp: 200
         kv: 20
         ki: 1
-        ko: 2000
+        ko: 200
     -   name: "osc1"
         kp: 200
         kv: 50
