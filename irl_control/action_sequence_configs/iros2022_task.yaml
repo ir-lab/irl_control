@@ -62,22 +62,29 @@ iros2022_pickup_sequence:
 iros2022_demo_sequence:
     # Hover above the female object
     -   action: INTERP
-        target_xyz: [[0,0,0], [-0.2, 0.6, 0.3], [0.3, 0.6, 0.3]]
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.3], [0.285, 0.6, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Transfer
         max_error: 0.2
         steps: 100
     # Make sure the last waypoint is reacht closely
     -   action: WP
-        target_xyz: [[0,0,0], [-0.2, 0.6, 0.3], [0.3, 0.6, 0.3]]
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.3], [0.285, 0.6, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Pre-Insert-Hover
+        max_error: 0.05
+    # Insert
+    -   action: WP
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.24], [0.285, 0.6, 0.24]]
+        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+        name: Insertion
         max_error: 0.05
     # Open gripper for 1 second
     -   action: GRIP
         gripper_force: -0.1
-        gripper_duration: 0.1
+        gripper_duration: 2.0
         name: Open-Grippers
+    # Hover Over
     -   action: WP
         target_xyz: [[0,0,0], [-0.2, 0.6, 0.3], [0.3, 0.6, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]

@@ -55,7 +55,7 @@ class ControlBase(MujocoApp):
 
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
-        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
+        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance = True)
 
         # Start collecting device states from simulator
         # NOTE: This is necessary when you are using OSC, as it assumes
