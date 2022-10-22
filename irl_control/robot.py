@@ -19,7 +19,9 @@ class Robot():
             self.joint_ids_all = np.hstack([self.joint_ids_all, dev.joint_ids_all])
         self.joint_ids_all = np.sort(np.unique(self.joint_ids_all))
         self.num_joints_total = len(self.joint_ids_all)
-    
+        self.running = False
+        self.data_collect_hz = 1000
+
     def get_jacobian(self, controlled_devices):
         J = np.array([])
         J_idxs = dict()
@@ -55,12 +57,15 @@ class Robot():
         dq = self.sim.data.qvel[self.joint_ids_all]
         return dq
     
+    def is_running(self):
+        return self.running
+    
     def start(self):
         self.running = True
         while self.running:
             for dev in self.sub_devices:
                 dev.update_state()
-            time.sleep(0.0001)
+            time.sleep( float(1.0/float(self.data_collect_hz)) )
 
     def stop(self):
         self.running = False
