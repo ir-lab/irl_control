@@ -13,6 +13,7 @@ import yaml
 from transforms3d.affines import compose
 from typing import Dict
 from control_base import ControlBase
+from BIP.bip_bimanual import IntprimStream
 
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
 DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
@@ -47,61 +48,41 @@ class CollectData(ControlBase):
         super().__init__(self.action_config["device_config"], robot_config_file, scene_file)
            
     def run(self, demo_type: str, demo_duration: int):        
+        intprim = IntprimStream()
+
         action_object_names = ['iros2022_action_objects']
         self.action_objects = self.action_config[action_object_names[0]]
         self.initialize_action_objects()
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
 
-        self.set_record(True)
+        self.sim.step()
+        step = 0
+        while not intprim.is_done():
+            state = self.get_clean_state(self.robot.getState())
+            phase, prediction = intprim.update_stream(state)
+            if phase is not None:
+                print("Phase at step {}: {:.2f}".format(step, phase))
 
-        self.run_sequence(self.action_config['iros2022_demo_sequence'])
+                # Set Targets:
+                self.targets['ur5left'].setAllQuat(*np.take(prediction, [26,27,28, 32,33,34,35]))
+                self.targets['ur5right'].setAllQuat(*np.take(prediction, [29,30,31, 36,37,38,39]))
+                self.targets['base'].abg[2] = prediction[0]
+            
+            # Generate an OSC signal to steer robot toward the targets
+            ctrlr_output = self.controller.generate(self.targets)
+            
+            # Generate an OSC signal to steer robot toward the targets
+            for force_idx, force  in zip(*ctrlr_output):
+                self.sim.data.ctrl[force_idx] = force
 
-        self.set_record(False)
-
+            # Step simulator / Render scene
+            self.sim.step()
+            self.viewer.render()   
+            step += 1        
+        
         self.run_sequence(self.action_config['iros2022_release_sequence'])
 
-
- 
-        # # counters/indexers used to keep track of waypoints
-        # right_wp_idx = 0
-        # left_wp_idx = 0
-        # for step in range(200000):
-        #     right_target = None
-        #     with open("d.txt", "r") as fh:
-        #         right_target = [float(v) for i, v in enumerate(fh.readline().split(","))]
-
-        #     # Set the target values for the robot's devices
-        #     # targets['ur5right'].setAllQuat(*right_target)
-        #     self.targets['ur5right'].setAllQuat(*right_wps[right_wp_idx])
-
-        #     # targets['ur5left'].setAllQuat(*right_target)
-        #     self.targets['ur5left'].setAllQuat(*left_wps[left_wp_idx])
-        #     self.targets['base'].abg[2] = np.deg2rad(-90)
-            
-        #     # Generate an OSC signal to steer robot toward the targets
-        #     ctrlr_output = self.controller.generate(self.targets)
-            
-        #     # Generate an OSC signal to steer robot toward the targets
-        #     for force_idx, force  in zip(*ctrlr_output):
-        #         self.sim.data.ctrl[force_idx] = force
-
-        #     state = self.robot.getState()
-        #     # print("Step", step)
-
-        #     # Step simulator / Render scene
-        #     self.sim.step()
-        #     self.viewer.render()     
-
-        # for action_object_name in action_object_names:
-        #     # Initialize the action objects and active arm
-        #     action_config = self.get_action_config(action_config_name)
-        #     self.action_objects = action_config[action_object_name]
-        #     self.initialize_action_objects()
-        #     # Run the sequence of all actions (main loop)
-        #     self.run_sequence(action_config[action_sequence_name])         
-        
-        # # Join threads / Stop the simulator 
-        # time_thread.join()
+        # Close Simulator
         self.robot.stop()
         self.robot_data_thread.join()
 

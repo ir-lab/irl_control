@@ -72,7 +72,7 @@ class Robot():
         """
         Get's the state of all the devices connected
         """
-        targets = ["q", "dq", "ee_xyz", "ee_quad"]
+        targets = ["q", "dq", "ee_xyz", "ee_quat"]
         state = {}
         state["devices"] = self.sub_devices_dict.keys()
         for device in state["devices"]:
