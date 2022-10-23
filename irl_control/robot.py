@@ -12,7 +12,7 @@ import copy
 class RobotState(Enum):
     M = 'INERTIA'
     DQ = 'DQ'
-    # J = 'JACOBIAN'
+    J = 'JACOBIAN'
 
 class Robot():
     def __init__(self, sub_devices, robot_name, sim):
@@ -35,60 +35,15 @@ class Robot():
         self.__state_var_map: Dict[RobotState, function] = {
             RobotState.M : lambda : self.__get_M(),
             RobotState.DQ : lambda : self.__get_dq(),
-            # RobotState.J : lambda : self.__get_jacobian()
+            RobotState.J : lambda : self.__get_jacobian()
         }
         self.__state: Dict[RobotState, Any] = dict()
         self.data_collect_hz = 50
 
-
-    def get_jacobian(self, controlled_devices):
-        J = np.array([])
-        J_idxs = dict()
-        start_idx = 0
-        for name in controlled_devices:
-            J_sub = self.sub_devices_dict[name].get_state(DeviceState.J)
-            J_idxs[name] = np.arange(start_idx, start_idx + J_sub.shape[0])
-            start_idx += J_sub.shape[0]
-            J_sub = J_sub[:, self.joint_ids_all]
-            J = np.vstack([J, J_sub]) if J.size else J_sub
-        return J, J_idxs
     
-    
-    def get_state(self, robot_state: RobotState):
-        self.__state_locks[robot_state].acquire()
-        state = self.__state[robot_state]
-        self.__state_locks[robot_state].release()
-        return state
-    
-    # def get_jointangles(self):
-    #     q = self.sim.data.qpos[self.joint_ids_all]
-    #     return q
-
-    # def get_jointangles(self,q):
-    #     self.sim.data.qpos[self.joint_ids_all] = q
-
-    # def get_rotation(self,name):
-    #     mjp.cymj._mju_quat2Mat(self._R9, self.sim.data.get_body_xquat(name))
-    #     R = self._R9.reshape((3,3))
-    #     return R
-
-    # def get_dq(self):
-    #     self.__state_locks[RobotState.DQ].acquire()
-    #     DQ = self.__state[RobotState.DQ]
-    #     self.__state_locks[RobotState.DQ].release()
-    #     return DQ
-
-    # def get_M(self):
-    #     self.__state_locks[RobotState.M].acquire()
-    #     M = self.__state[RobotState.M]
-    #     self.__state_locks[RobotState.M].release()
-    #     return M
-
     def __get_jacobian(self):
-        # This method is experimental (not being used)
-        # Hacky (warning) Assumes we are always controlling all devices
         controlled_devices = self.sub_devices_dict.keys()
-        J = np.array([])
+        Js = dict()
         J_idxs = dict()
         start_idx = 0
         for name in controlled_devices:
@@ -96,14 +51,14 @@ class Robot():
             J_idxs[name] = np.arange(start_idx, start_idx + J_sub.shape[0])
             start_idx += J_sub.shape[0]
             J_sub = J_sub[:, self.joint_ids_all]
-            J = np.vstack([J, J_sub]) if J.size else J_sub
-        return J, J_idxs
+            Js[name] = J_sub
+        return Js, J_idxs
     
     def __get_dq(self):
-        # dq = np.array([])
-        # for dev in self.sub_devices:
-        #     dq = np.append(dq, dev.get_state(DeviceState.DQ))
-        dq = self.sim.data.qvel[self.joint_ids_all]
+        # dq = self.sim.data.qvel[self.joint_ids_all]
+        dq = np.zeros(self.joint_ids_all.shape)
+        for dev in self.sub_devices:
+            dq[dev.get_all_joint_ids()] = dev.get_state(DeviceState.DQ)
         return dq
 
 
@@ -113,7 +68,12 @@ class Robot():
         M = M[np.ix_(self.joint_ids_all, self.joint_ids_all)]
         return M
 
-
+    def get_state(self, robot_state: RobotState):
+        self.__state_locks[robot_state].acquire()
+        state = self.__state[robot_state]
+        self.__state_locks[robot_state].release()
+        return state
+        
     def __set_state(self, state_var: RobotState):
         self.__state_locks[state_var].acquire()
         func = self.__state_var_map[state_var]

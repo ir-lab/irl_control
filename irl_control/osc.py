@@ -134,9 +134,11 @@ class OSC():
         assert self.robot.is_running(), "Robot must be running!"
         
         # Get the Jacobian for the all of devices passed in
-        # J, J_idxs = self.robot.get_state(RobotState.J)
-        J, J_idxs = self.robot.get_jacobian(targets.keys())
-        
+        Js, J_idxs = self.robot.get_state(RobotState.J)
+        # J, J_idxs = self.robot.get_jacobian(targets.keys())
+        J = np.array([])
+        for device_name in targets.keys():
+            J = np.vstack([J, Js[device_name]]) if J.size else Js[device_name]
         # Get the inertia matrix for the robot
         # M = self.robot.get_M()
         M = self.robot.get_state(RobotState.M)
