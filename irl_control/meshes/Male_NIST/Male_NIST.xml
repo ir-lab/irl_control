@@ -16,7 +16,7 @@
    <worldbody>
       <body name="nist_male" pos="0.4 0.6 -0.0515">
          <freejoint name="free_joint_male"/>
-         <inertial pos="0 0 0" mass="0.1" diaginertia="0.005 0.005 0.005"/>
+         <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
          <geom name="Male_NIST_007" type="mesh" mesh="Male_NIST_007" pos="0 0 0" conaffinity="1" contype="1"/>
          <geom name="Male_NIST_002" type="mesh" mesh="Male_NIST_002" pos="0 0 0" conaffinity="1" contype="1"/>
          <geom name="Male_NIST_006C" type="mesh" mesh="Male_NIST_006C" pos="0 0 0" conaffinity="1" contype="1"/>

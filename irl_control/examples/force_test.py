@@ -4,6 +4,7 @@ import threading
 from typing import Dict, Tuple
 from irl_control import OSC, MujocoApp
 from irl_control.utils import Target
+from irl_control.device import DeviceState
 import csv
 
 class ForceTest(MujocoApp):
@@ -96,7 +97,7 @@ class ForceTest(MujocoApp):
             for force_idx, force  in zip(*ctrlr_output):
                 self.sim.data.ctrl[force_idx] = force
             #Measure the errors 
-            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state('ee_xyz') - targets['ur5left'].xyz)
+            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state(DeviceState.EE_XYZ) - targets['ur5left'].xyz)
             #Move to next target if error is less then threshold
             if self.errors['ur5left']  < threshold_ee:
                 if left_wp_index < left_wps.shape[0] - 1 :
@@ -107,7 +108,7 @@ class ForceTest(MujocoApp):
             self.viewer.render()
             functions.mj_inverse(self.model,self.sim.data)
             #Measure force on left end-effector
-            force = ur5left.get_force()
+            force = ur5left.get_state(DeviceState.FORCE)
             x += 1
             #write force values to CSV
             with open('data.csv', 'a') as csv_file:

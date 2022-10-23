@@ -11,6 +11,7 @@ import yaml
 import os
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
 from transforms3d.affines import compose
+from irl_control.device import DeviceState
 
 # Define the default orientations of the end effectors
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
@@ -209,7 +210,7 @@ class InsertionTask(MujocoApp):
         specified in the action sequence.
         """
         # Set targets for passive arm
-        self.targets[self.passive_arm.name].xyz = self.passive_arm.get_state('ee_xyz')
+        self.targets[self.passive_arm.name].xyz = self.passive_arm.get_state(DeviceState.EE_XYZ)
         self.targets[self.passive_arm.name].abg = DEFAULT_EE_ORIENTATION
         
         # Set targets for active arm
@@ -310,7 +311,7 @@ class InsertionTask(MujocoApp):
             self.set_free_joint_qpos(obj['joint_name'], quat=target_quat, pos=target_pos)
 
     def run_sequence(self, action_sequence):
-        self.start_pos = np.copy(self.active_arm.get_state('ee_xyz'))
+        self.start_pos = np.copy(self.active_arm.get_state(DeviceState.EE_XYZ))
         for action_entry in action_sequence:
             action = self.string2action(action_entry['action'])
             action_func = self.action_map[action]
@@ -414,8 +415,8 @@ class InsertionTask(MujocoApp):
                 self.run_sequence(action_config[action_sequence_name])            
         
         # Stop collecting the robot states and join threads
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":

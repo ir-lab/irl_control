@@ -5,7 +5,7 @@ import time
 from irl_control.device import Device, DeviceState
 from enum import Enum
 from threading import Lock
-from typing import Dict, Any
+from typing import Dict, Any, List
 import copy
 
 class RobotState(Enum):
@@ -14,7 +14,7 @@ class RobotState(Enum):
     J = 'JACOBIAN'
 
 class Robot():
-    def __init__(self, sub_devices, robot_name, sim, collect_hz=120):
+    def __init__(self, sub_devices: List[Device], robot_name, sim, collect_hz=1000):
         self.sim = sim
         self.sub_devices = sub_devices
         self.sub_devices_dict: Dict[str, Device] = dict()
@@ -93,7 +93,7 @@ class Robot():
     def start(self):
         assert self.running is False
         self.running = True
-        INTERVAL = float(1.0/float(self.data_collect_hz))
+        interval = float(1.0/float(self.data_collect_hz))
         prev_time = time.time()
         while self.running:
             for dev in self.sub_devices:
@@ -101,7 +101,7 @@ class Robot():
             self.__update_state()
             curr_time = time.time()
             diff = curr_time - prev_time
-            delay = max(INTERVAL - diff, 0)
+            delay = max(interval - diff, 0)
             time.sleep(delay)
             prev_time = curr_time
     
