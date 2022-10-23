@@ -1,20 +1,18 @@
 import numpy as np
 from threading import Lock
-from typing import List, Dict, Any, Tuple
+from typing import Dict, Any
 from enum import Enum
 import copy
 
-class StateVar(Enum):
-    Q = 0
-    DQ = 1
-    DDQ = 2
-    EE_XYZ = 3
-    EE_QUAT = 4
-
-class StateKey():
-    def __init__(self, state_var: StateVar, joint_idxs: np.ndarray = None):
-        self.state_var = state_var
-        self.joint_idxs = joint_idxs
+class DeviceState(Enum):
+    Q = 'Q'
+    DQ = 'DQ'
+    DDQ = 'DDQ'
+    EE_XYZ = 'EE_XYZ'
+    EE_QUAT = 'EE_QUAT'
+    FORCE = 'FORCE'
+    TORQUE = 'TORQUE'
+    J = 'JACOBIAN'
 
 class Device():
     """
@@ -33,12 +31,6 @@ class Device():
         self.ctrlr_dof = np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])
         self.start_angles = np.array(device_yml['start_angles'])
         self.num_gripper_joints = device_yml['num_gripper_joints']
-        
-        # Initialize dicts to keep track of the state variables and locks
-        self.state: Dict[StateKey, Any] = dict()
-        self.state_locks: Dict[StateKey, Lock] = dict()
-        # This private state_keys dict a maps state_var, joint_id pairs to a key (used internally)
-        self.__state_keys: Dict[StateVar, Dict[Tuple, StateKey]] = dict()
         
         # Check if the user specifies a start body for the while loop to terminte at
         try:
@@ -75,35 +67,41 @@ class Device():
         actuator_trnids = model.actuator_trnid[:,0]
         self.ctrl_idxs = np.intersect1d(actuator_trnids, self.joint_ids_all, return_indices=True)[1]
         self.actuator_trnids = actuator_trnids[self.ctrl_idxs]
-        
-        # initialize state keys
-        # self.create_state_key(StateVar.Q, self.joint_ids_all)
-        # self.create_state_key(StateVar.DQ, self.joint_ids_all)
-        # self.create_state_key(StateVar.DDQ, self.joint_ids_all)
-        self.create_state_key(StateVar.EE_XYZ, [])
-        self.create_state_key(StateVar.EE_QUAT, [])
 
         # Check that the 
         if np.sum(np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])) > len(self.joint_ids):
             print("Fewer DOF than specified")
-    
-    def create_state_key(self, state_var, joint_idxs):
-        if state_var not in self.__state_keys.keys():
-            self.__state_keys[state_var] = dict()
-        key = StateKey(state_var, joint_idxs)
-        self.state_locks[key] = Lock()
-        self.__state_keys[state_var][tuple(joint_idxs)] = key
-        self.__set_state(key)
+        
+        # Initialize dicts to keep track of the state variables and locks
+        self.__state_locks: Dict[DeviceState, Lock] = dict([(key, Lock()) for key in DeviceState])
+        self.__state_var_map: Dict[DeviceState, function] = self.__get_state_var_map()
+        self.__state: Dict[DeviceState, Any] = self.__init_state()
+        
+        # These are the that keys we should use when returning data from get_all_states()
+        self.concise_state_vars = [
+            DeviceState.Q, 
+            DeviceState.DQ, 
+            DeviceState.EE_XYZ, 
+            DeviceState.EE_QUAT,
+            DeviceState.FORCE,
+            DeviceState.TORQUE
+        ]
 
-    def __get_state_key(self, state_var, joint_idxs):
-        if state_var in self.__state_keys.keys():
-            if tuple(joint_idxs) not in self.__state_keys[state_var].keys():
-                self.create_state_key(state_var, joint_idxs)
-        else:
-            self.create_state_key(state_var, joint_idxs)
-        return self.__state_keys[state_var][tuple(joint_idxs)]
-    
-    def get_jacobian(self, full=False):
+    # def get_jacobian(self, full=False):
+    #     """
+    #         Returns either:
+    #         1) The full jacobian (of the Device, using its EE), if full==True 
+    #         2) The full jacobian evaluated at the controlled DoF, if full==False 
+    #         Depeding on the 'full' parameter's value
+    #     """
+    #     self.__state_locks[DeviceState.J].acquire()
+    #     J = self.__state[DeviceState.J]
+    #     self.__state_locks[DeviceState.J].release()
+    #     if full == False:
+    #         J = J[self.ctrlr_dof]
+    #     return J
+
+    def __get_jacobian(self, full=False):
         """
             Returns either:
             1) The full jacobian (of the Device, using its EE), if full==True 
@@ -122,65 +120,76 @@ class Device():
             J = J[self.ctrlr_dof]
         return J
 
-    def _get_R(self):
+    def __get_R(self):
         if self.name == "ur5right":
             return self.sim.data.get_site_xmat("ft_frame_ur5right")
         if self.name == "ur5left":
             return self.sim.data.get_site_xmat("ft_frame_ur5left")
 
-    def get_force(self):
+    def __get_force(self):
         if self.name == "ur5right":
-            force = np.matmul(self._get_R(),self.sim.data.sensordata[0:3])
+            force = np.matmul(self.__get_R(), self.sim.data.sensordata[0:3])
             return force
         if self.name == "ur5left":
-            force = np.matmul(self._get_R(),self.sim.data.sensordata[6:9])
+            force = np.matmul(self.__get_R(), self.sim.data.sensordata[6:9])
             return force
         else:
             return np.zeros(3)
             
-    def get_torque(self):
+    def __get_torque(self):
         if self.name == "ur5right":
-            force = np.matmul(self._get_R(),self.sim.data.sensordata[3:6])
+            force = np.matmul(self.__get_R(), self.sim.data.sensordata[3:6])
             return force
         if self.name == "ur5left":
-            force = np.matmul(self._get_R(),self.sim.data.sensordata[9:12])
+            force = np.matmul(self.__get_R(), self.sim.data.sensordata[9:12])
             return force
         else:
             return np.zeros(3)
 
-    def __set_state(self, state_key: StateKey):
-        self.state_locks[state_key].acquire()
-        if state_key.state_var == StateVar.Q:
-            value = self.sim.data.qpos[state_key.joint_idxs]
-        elif state_key.state_var == StateVar.DQ:
-            value = self.sim.data.qvel[state_key.joint_idxs]
-        elif state_key.state_var == StateVar.DDQ:
-            value = self.sim.data.qacc[state_key.joint_idxs]
-        elif state_key.state_var == StateVar.EE_XYZ:
-            value = self.sim.data.get_body_xpos(self.EE)
-        elif state_key.state_var == StateVar.EE_QUAT:
-            value = self.sim.data.get_body_xquat(self.EE)
-        self.state[state_key] = copy.copy(value) # Make sure to copy (or else reference will stick to Dict value)
-        self.state_locks[state_key].release()
+    def __init_state(self):
+        state = dict()
+        for key in DeviceState:
+            state[key] = self.__state_var_map[key]
+        return state
 
+    def __get_state_var_map(self):
+        return {
+            DeviceState.Q : lambda : self.sim.data.qpos[self.joint_ids_all],
+            DeviceState.DQ : lambda : self.sim.data.qvel[self.joint_ids_all],
+            DeviceState.DDQ : lambda : self.sim.data.qacc[self.joint_ids_all],
+            DeviceState.EE_XYZ : lambda : self.sim.data.get_body_xpos(self.EE),
+            DeviceState.EE_QUAT : lambda : self.sim.data.get_body_xquat(self.EE),
+            DeviceState.FORCE : lambda : self.__get_force(),
+            DeviceState.TORQUE : lambda : self.__get_torque(),
+            DeviceState.J : lambda : self.__get_jacobian()
+        }
 
-    def get_state(self, state_var: str, joint_ids: list = []):
+    def __set_state(self, state_var: DeviceState):
+        self.__state_locks[state_var].acquire()
+        func = self.__state_var_map[state_var]
+        value = func()
+        self.__state[state_var] = copy.copy(value) # Make sure to copy (or else reference will stick to Dict value)
+        self.__state_locks[state_var].release()
+
+    def get_state(self, state_var: DeviceState):
         """
             Get the state of the device corresponding to the key value (if exists)
         """
-        state_key = self.__get_state_key(state_var, joint_ids)
-        self.state_locks[state_key].acquire()
-        value = self.state[state_key]
-        self.state_locks[state_key].release()
+        self.__state_locks[state_var].acquire()
+        value = self.__state[state_var]
+        self.__state_locks[state_var].release()
         return value
+    
+    def get_all_states(self):
+        return dict([(key, self.get_state(key)) for key in self.concise_state_vars])
     
     def update_state(self):
         """
             This should running in a thread: Robot.start()
         """
-        for state_key in self.state.keys():
-            self.__set_state(state_key)
-
+        for var in DeviceState:
+            self.__set_state(var)
+        
     def get_all_joint_ids(self):
         return self.joint_ids_all
     

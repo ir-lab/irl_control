@@ -12,6 +12,7 @@ import irl_control
 import yaml
 from transforms3d.affines import compose
 from typing import Dict
+from irl_control.device import Device, DeviceState
 
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
 DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
@@ -62,7 +63,6 @@ class ControlBase(MujocoApp):
         #       that the robot.start() thread is running.
         self.robot_data_thread = threading.Thread(target=self.robot.start)
         self.robot_data_thread.start()
-        
         # Keep track of device target errors
         self.viewer = MjViewer(self.sim)
         self.viewer.cam.azimuth = 90
@@ -123,21 +123,22 @@ class ControlBase(MujocoApp):
         if step < 25:
             return False
         # Based on velocity
-        state = self.robot.getState()
+        state = self.robot.get_device_states()
         vel = []
-        for device_name in state["devices"]:
-            vel += state["dq_" + device_name].tolist()
+        for device_name, device_state in state.items():
+            vel += device_state[DeviceState.DQ].tolist()
         vel = np.asarray(vel)
         if np.all(np.isclose(np.zeros_like(vel), vel, rtol=max_error, atol=max_error)):
             return True
         return False
 
         # Based on error:
-        done = True
-        for _, err in self.errors.items():
-            if err > max_error:
-                done = False       
-        return done
+        # done = True
+        # for _, err in self.errors.items():
+        #     if err > max_error:
+        #         print(err)
+        #         done = False
+        # return done
 
     def go_to_waypoint(self, params):
         """
@@ -166,11 +167,6 @@ class ControlBase(MujocoApp):
         Optionally, you can render the scene and update errors of the devices,
         which are stored as class member variables.
         """
-        # Determine gripper index based on active arm
-        # if self.active_arm.name == 'ur5right':
-        #     gripper_idx = 7
-        # elif self.active_arm.name == 'ur5left':
-        #     gripper_idx = 14
         
         # Apply forces to the main robot
         for force_idx, force  in zip(*forces):
@@ -294,8 +290,8 @@ class ControlBase(MujocoApp):
         current_pos = []
         current_rot = []
         for device_name in self.errors.keys():
-            current_pos.append(self.robot.get_device(device_name).get_state('ee_xyz'))
-            rot = np.asarray(self.robot.get_device(device_name).get_state('ee_quat'))
+            current_pos.append(self.robot.get_device(device_name).get_state(DeviceState.EE_XYZ))
+            rot = np.asarray(self.robot.get_device(device_name).get_state(DeviceState.EE_QUAT))
             if rot[0] < 0:
                 rot *= -1 # Make sure the w component is always positive
             current_rot.append(rot)

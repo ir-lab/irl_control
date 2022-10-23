@@ -1,3 +1,4 @@
+from irl_control.robot import RobotState
 import numpy as np
 import mujoco_py as mjp
 from transforms3d.derivations.quaternions import qmult
@@ -7,7 +8,7 @@ from transforms3d.utils import normalized_vector
 from typing import Dict, Tuple
 from irl_control import Robot, Device
 from irl_control.utils import ControllerConfig, Target
-from irl_control.device import StateVar
+from irl_control.device import DeviceState
 
 class OSC():
     """
@@ -108,7 +109,7 @@ class OSC():
         u_task = np.zeros(6)
         # Calculate x,y,z error
         if np.sum(device.ctrlr_dof_xyz) > 0:
-            diff = device.get_state(StateVar.EE_XYZ) - target.xyz
+            diff = device.get_state(DeviceState.EE_XYZ) - target.xyz
             u_task[:3] = diff
         
         # Calculate a,b,g error
@@ -117,7 +118,7 @@ class OSC():
             if not target.use_quat:
                 t_rot = euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz")
             q_d = normalized_vector(t_rot)
-            q_r = np.array(qmult(q_d, qconjugate(device.get_state(StateVar.EE_QUAT))))
+            q_r = np.array(qmult(q_d, qconjugate(device.get_state(DeviceState.EE_QUAT))))
             u_task[3:] =  quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
         return u_task
     
@@ -131,15 +132,21 @@ class OSC():
             targets: dict of device names mapping to Target objects
         """
         assert self.robot.is_running(), "Robot must be running!"
+        
         # Get the Jacobian for the all of devices passed in
+        # J, J_idxs = self.robot.get_state(RobotState.J)
         J, J_idxs = self.robot.get_jacobian(targets.keys())
+        
         # Get the inertia matrix for the robot
-        M = self.robot.get_M()
+        # M = self.robot.get_M()
+        M = self.robot.get_state(RobotState.M)
+        
         # Compute the inverse matrices used for task space operations 
         Mx, M_inv = self.__Mx(J, M)
 
         # Initialize the control vectors and sim data needed for control calculations
-        dq = self.sim.data.qvel[self.robot.joint_ids_all]
+        # dq = self.robot.get_dq()
+        dq = self.robot.get_state(RobotState.DQ)
         dx = np.dot(J, dq)
         uv_all = np.dot(M, dq)
         u_all = np.zeros(self.robot.num_joints_total)
@@ -167,8 +174,8 @@ class OSC():
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
                 u_task[device.ctrlr_dof] += kv * diff
             
-            force = np.append(device.get_force(),device.get_torque())
-            ext_f = np.append(ext_f,force[device.ctrlr_dof])
+            force = np.append(device.get_state(DeviceState.FORCE), device.get_state(DeviceState.TORQUE))
+            ext_f = np.append(ext_f, force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
         # Transform task space signal to joint space
