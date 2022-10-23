@@ -37,7 +37,7 @@ class Robot():
             RobotState.DQ : lambda : self.__get_dq(),
             # RobotState.J : lambda : self.__get_jacobian()
         }
-        self.__state: Dict[RobotState, Any] = dict([(key, self.__state_var_map[key]) for key in RobotState])
+        self.__state: Dict[RobotState, Any] = dict()
         self.data_collect_hz = 50
 
 

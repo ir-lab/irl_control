@@ -74,8 +74,18 @@ class Device():
         
         # Initialize dicts to keep track of the state variables and locks
         self.__state_locks: Dict[DeviceState, Lock] = dict([(key, Lock()) for key in DeviceState])
-        self.__state_var_map: Dict[DeviceState, function] = self.__get_state_var_map()
-        self.__state: Dict[DeviceState, Any] = self.__init_state()
+        self.__state_var_map: Dict[DeviceState, function] = {
+            DeviceState.Q : lambda : self.sim.data.qpos[self.joint_ids_all],
+            DeviceState.DQ : lambda : self.sim.data.qvel[self.joint_ids_all],
+            DeviceState.DDQ : lambda : self.sim.data.qacc[self.joint_ids_all],
+            DeviceState.EE_XYZ : lambda : self.sim.data.get_body_xpos(self.EE),
+            DeviceState.EE_QUAT : lambda : self.sim.data.get_body_xquat(self.EE),
+            DeviceState.FORCE : lambda : self.__get_force(),
+            DeviceState.TORQUE : lambda : self.__get_torque(),
+            DeviceState.J : lambda : self.__get_jacobian()
+        }
+        
+        self.__state: Dict[DeviceState, Any] = dict()
         
         # These are the that keys we should use when returning data from get_all_states()
         self.concise_state_vars = [
@@ -145,24 +155,6 @@ class Device():
             return force
         else:
             return np.zeros(3)
-
-    def __init_state(self):
-        state = dict()
-        for key in DeviceState:
-            state[key] = self.__state_var_map[key]
-        return state
-
-    def __get_state_var_map(self):
-        return {
-            DeviceState.Q : lambda : self.sim.data.qpos[self.joint_ids_all],
-            DeviceState.DQ : lambda : self.sim.data.qvel[self.joint_ids_all],
-            DeviceState.DDQ : lambda : self.sim.data.qacc[self.joint_ids_all],
-            DeviceState.EE_XYZ : lambda : self.sim.data.get_body_xpos(self.EE),
-            DeviceState.EE_QUAT : lambda : self.sim.data.get_body_xquat(self.EE),
-            DeviceState.FORCE : lambda : self.__get_force(),
-            DeviceState.TORQUE : lambda : self.__get_torque(),
-            DeviceState.J : lambda : self.__get_jacobian()
-        }
 
     def __set_state(self, state_var: DeviceState):
         self.__state_locks[state_var].acquire()
