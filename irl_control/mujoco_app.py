@@ -35,6 +35,7 @@ class MujocoApp():
         self.devices = np.hstack([self.devices[keep_idxs], robots])
     
     def sleep_for(self, sleep_time: float):
+        assert self.timer_running == False
         self.timer_running = True
         time.sleep(sleep_time)
         self.timer_running = False

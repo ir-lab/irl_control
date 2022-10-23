@@ -1,0 +1,101 @@
+device_config:
+    devices: ["base", "ur5left", "ur5right"]
+    controllers: ["osc0", "osc2", "osc2"]
+    control_type: ["joint", "task", "task"]
+
+iros2022_action_objects:
+    male_object:
+        joint_name: "free_joint_quad_grommet"
+        hover_offset: [[0,0,0], [0.33, 0.26, 0.3], [0.59, -0.16, 0.3]]
+        grip_offset: [[0,0,0], [0.33, 0.26, 0.19], [0.59, -0.16, 0.19]]
+        initial_pos_xyz: [0.5, 0.0, 0.0]
+        initial_pos_quat: [1.0, 0, 0, 0.3]
+        grip_yaw: 90
+    female_object: 
+        joint_name: "free_joint_quad_peg"
+        hover_offset: [[0,0,0], [-0.2, 0.5, 0.3], [0.3, 0.5, 0.3]]
+        initial_pos_xyz: [0.1, 0.6, 0.0]
+        initial_pos_quat: [1.0, 0, 0, 1.0]
+        grip_yaw: 90
+
+iros2022_pickup_sequence:
+    # Hover above the male object
+    -   action: WP
+        target_xyz: [[0,0,0], [0.375, 0.3, 0.35], [0.625, -0.3, 0.35]]
+        target_quat: [[0.707, 0, 0, -0.707], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Initialization
+        max_error: 0.3
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: -0.1
+        gripper_duration: 0.1
+        name: Open-Grippers
+    # Go above the handles
+    -   action: WP
+        target_xyz: male_object.hover_offset
+        target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Pre-Grasp-Hover
+        min_speed_xyz: 0.1
+        max_error: 0.3
+    # Go above the handles
+    -   action: WP
+        target_xyz: male_object.grip_offset
+        target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        min_speed_xyz: 0.1
+        name: Pre-Grasp
+        max_error: 0.1
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: 0.05
+        gripper_duration: 2.0
+        name: Close-Grippers
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: 0.2
+        gripper_duration: 0.1
+        name: Force-Grippers
+    # Go above the handles
+    -   action: WP
+        target_xyz: male_object.hover_offset
+        target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Lift-Object
+        max_error: 0.08
+
+iros2022_demo_sequence:
+    # Hover above the female object
+    -   action: INTERP
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.28], [0.285, 0.6, 0.28]]
+        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+        name: Transfer
+        max_error: 2.0
+        max_speed_xyz: 2.0
+        min_speed_xyz: 0.1
+        steps: 100
+    # Make sure the last waypoint is reached closely
+    -   action: WP
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.26], [0.285, 0.6, 0.26]]
+        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+        name: Pre-Insert-Hover
+        max_speed_xyz: 0.1
+        max_error: 0.08
+    # Insert
+    -   action: WP
+        target_xyz: [[0,0,0], [-0.215, 0.6, 0.23], [0.285, 0.6, 0.23]]
+        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+        name: Insertion
+        max_error: 0.08
+        max_speed_xyz: 0.05
+        min_speed_xyz: 0.05
+
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: -0.1
+        gripper_duration: 1.0
+        name: Open-Grippers
+    # Hover Over
+    -   action: WP
+        target_xyz: [[0,0,0], [-0.2, 0.6, 0.3], [0.3, 0.6, 0.3]]
+        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+        name: Dummy
+        min_speed_xyz: 0.5
+        max_error: 0.000001

@@ -16,9 +16,9 @@ class DeviceState(Enum):
 
 class Device():
     """
-        The Device class encapsulates the device parameters specified in the yaml file
-        that is passed to MujocoApp. It collects data from the simulator, obtaining the 
-        desired device states.
+    The Device class encapsulates the device parameters specified in the yaml file
+    that is passed to MujocoApp. It collects data from the simulator, obtaining the 
+    desired device states.
     """
     def __init__(self, device_yml: Dict, model, sim):
         self.sim = sim
@@ -73,7 +73,6 @@ class Device():
             print("Fewer DOF than specified")
         
         # Initialize dicts to keep track of the state variables and locks
-        self.__state_locks: Dict[DeviceState, Lock] = dict([(key, Lock()) for key in DeviceState])
         self.__state_var_map: Dict[DeviceState, function] = {
             DeviceState.Q : lambda : self.sim.data.qpos[self.joint_ids_all],
             DeviceState.DQ : lambda : self.sim.data.qvel[self.joint_ids_all],
@@ -86,6 +85,7 @@ class Device():
         }
         
         self.__state: Dict[DeviceState, Any] = dict()
+        self.__state_locks: Dict[DeviceState, Lock] = dict([(key, Lock()) for key in DeviceState])
         
         # These are the that keys we should use when returning data from get_all_states()
         self.concise_state_vars = [
@@ -97,26 +97,13 @@ class Device():
             DeviceState.TORQUE
         ]
 
-    # def get_jacobian(self, full=False):
-    #     """
-    #         Returns either:
-    #         1) The full jacobian (of the Device, using its EE), if full==True 
-    #         2) The full jacobian evaluated at the controlled DoF, if full==False 
-    #         Depeding on the 'full' parameter's value
-    #     """
-    #     self.__state_locks[DeviceState.J].acquire()
-    #     J = self.__state[DeviceState.J]
-    #     self.__state_locks[DeviceState.J].release()
-    #     if full == False:
-    #         J = J[self.ctrlr_dof]
-    #     return J
-
     def __get_jacobian(self, full=False):
         """
-            Returns either:
-            1) The full jacobian (of the Device, using its EE), if full==True 
-            2) The full jacobian evaluated at the controlled DoF, if full==False 
-            Depeding on the 'full' parameter's value
+        NOTE: Returns either:
+        1) The full jacobian (of the Device, using its EE), if full==True 
+        2) The full jacobian evaluated at the controlled DoF, if full==False 
+        The parameter, full=False, is added in case we decide for the get methods 
+        to take in arguments (currently not supported).
         """
         J = np.array([])
         # Get the jacobian for the x,y,z components
@@ -131,12 +118,19 @@ class Device():
         return J
 
     def __get_R(self):
+        """
+        Get rotation matrix for device's ft_frame
+        """
         if self.name == "ur5right":
             return self.sim.data.get_site_xmat("ft_frame_ur5right")
         if self.name == "ur5left":
             return self.sim.data.get_site_xmat("ft_frame_ur5left")
 
     def __get_force(self):
+        """
+        Get the external forces, used (for admittance control) acting upon
+        the gripper sensors
+        """
         if self.name == "ur5right":
             force = np.matmul(self.__get_R(), self.sim.data.sensordata[0:3])
             return force
@@ -147,6 +141,10 @@ class Device():
             return np.zeros(3)
             
     def __get_torque(self):
+        """
+        Get the external torques, used (for admittance control) acting upon
+        the gripper sensors
+        """
         if self.name == "ur5right":
             force = np.matmul(self.__get_R(), self.sim.data.sensordata[3:6])
             return force
@@ -157,18 +155,21 @@ class Device():
             return np.zeros(3)
 
     def __set_state(self, state_var: DeviceState):
+        """
+        Set the state of the device corresponding to the key value (if exists)    
+        """
         self.__state_locks[state_var].acquire()
-        func = self.__state_var_map[state_var]
-        value = func()
-        self.__state[state_var] = copy.copy(value) # Make sure to copy (or else reference will stick to Dict value)
+        var_func = self.__state_var_map[state_var]
+        var_value = var_func()
+        self.__state[state_var] = copy.copy(var_value) # Make sure to copy (or else reference will stick to Dict value)
         self.__state_locks[state_var].release()
 
     def get_state(self, state_var: DeviceState):
         """
-            Get the state of the device corresponding to the key value (if exists)
+        Get the state of the device corresponding to the key value (if exists)
         """
         self.__state_locks[state_var].acquire()
-        value = self.__state[state_var]
+        value = copy.copy(self.__state[state_var])
         self.__state_locks[state_var].release()
         return value
     
@@ -177,7 +178,7 @@ class Device():
     
     def update_state(self):
         """
-            This should running in a thread: Robot.start()
+        This should running in a thread: Robot.start()
         """
         for var in DeviceState:
             self.__set_state(var)

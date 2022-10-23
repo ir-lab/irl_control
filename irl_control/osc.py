@@ -97,11 +97,8 @@ class OSC():
             raise Exception
 
         return u_task
-    
-    def calc_error(self, target, device):
-        return self.__calc_error(target, device)
 
-    def __calc_error(self, target, device):
+    def calc_error(self, target, device):
         """
             Compute the difference between the target and device EE
             for the x,y,z and a,b,g components
@@ -132,23 +129,24 @@ class OSC():
             targets: dict of device names mapping to Target objects
         """
         assert self.robot.is_running(), "Robot must be running!"
-        
+        robot_state = self.robot.get_all_states()
         # Get the Jacobian for the all of devices passed in
-        Js, J_idxs = self.robot.get_state(RobotState.J)
+        Js, J_idxs = robot_state[RobotState.J]
         # J, J_idxs = self.robot.get_jacobian(targets.keys())
         J = np.array([])
         for device_name in targets.keys():
             J = np.vstack([J, Js[device_name]]) if J.size else Js[device_name]
         # Get the inertia matrix for the robot
         # M = self.robot.get_M()
-        M = self.robot.get_state(RobotState.M)
+        M = robot_state[RobotState.M]
         
         # Compute the inverse matrices used for task space operations 
         Mx, M_inv = self.__Mx(J, M)
 
         # Initialize the control vectors and sim data needed for control calculations
         # dq = self.robot.get_dq()
-        dq = self.robot.get_state(RobotState.DQ)
+        dq = robot_state[RobotState.DQ]
+        
         dx = np.dot(J, dq)
         uv_all = np.dot(M, dq)
         u_all = np.zeros(self.robot.num_joints_total)
@@ -158,7 +156,7 @@ class OSC():
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
             # Calculate the error from the device EE to target
-            u_task = self.__calc_error(target, device)
+            u_task = self.calc_error(target, device)
            
             # Apply gains to the error terms
             if device.max_vel is not None:
@@ -176,7 +174,7 @@ class OSC():
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
                 u_task[device.ctrlr_dof] += kv * diff
             
-            force = np.append(device.get_state(DeviceState.FORCE), device.get_state(DeviceState.TORQUE))
+            force = np.append(robot_state[device_name][DeviceState.FORCE], robot_state[device_name][DeviceState.TORQUE])
             ext_f = np.append(ext_f, force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         

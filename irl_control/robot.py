@@ -14,10 +14,10 @@ class RobotState(Enum):
     J = 'JACOBIAN'
 
 class Robot():
-    def __init__(self, sub_devices, robot_name, sim):
+    def __init__(self, sub_devices, robot_name, sim, collect_hz=120):
         self.sim = sim
         self.sub_devices = sub_devices
-        self.sub_devices_dict = dict()
+        self.sub_devices_dict: Dict[str, Device] = dict()
         for dev in self.sub_devices:
             self.sub_devices_dict[dev.name] = dev
 
@@ -37,16 +37,19 @@ class Robot():
             RobotState.J : lambda : self.__get_jacobian()
         }
         self.__state: Dict[RobotState, Any] = dict()
-        self.data_collect_hz = 100
+        self.data_collect_hz = collect_hz
 
     
     def __get_jacobian(self):
-        controlled_devices = self.sub_devices_dict.keys()
+        """
+            Return the Jacobians for all of the devices,
+            so that OSC can stack them according to provided the target entries
+        """
         Js = dict()
         J_idxs = dict()
         start_idx = 0
-        for name in controlled_devices:
-            J_sub = self.sub_devices_dict[name].get_state(DeviceState.J)
+        for name, device in self.sub_devices_dict.items():
+            J_sub = device.get_state(DeviceState.J)
             J_idxs[name] = np.arange(start_idx, start_idx + J_sub.shape[0])
             start_idx += J_sub.shape[0]
             J_sub = J_sub[:, self.joint_ids_all]
@@ -69,7 +72,7 @@ class Robot():
 
     def get_state(self, robot_state: RobotState):
         self.__state_locks[robot_state].acquire()
-        state = self.__state[robot_state]
+        state = copy.copy(self.__state[robot_state])
         self.__state_locks[robot_state].release()
         return state
 
@@ -88,6 +91,7 @@ class Robot():
             self.__set_state(var)
     
     def start(self):
+        assert self.running is False
         self.running = True
         INTERVAL = float(1.0/float(self.data_collect_hz))
         prev_time = time.time()
@@ -107,6 +111,19 @@ class Robot():
     def get_device(self, device_name: str) -> Device:
         return self.sub_devices_dict[device_name]
 
+    def get_all_states(self):
+        """
+        Get's the state of all the devices connected plus the robot states
+        """
+        state = {}
+        for device_name, device in self.sub_devices_dict.items():
+            state[device_name] = device.get_all_states()
+        
+        for key in RobotState:
+            state[key] = self.get_state(key)
+        
+        return state
+    
     def get_device_states(self):
         """
         Get's the state of all the devices connected
