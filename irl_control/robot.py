@@ -3,7 +3,6 @@ import numpy as np
 import mujoco_py as mjp
 import time
 from irl_control.device import Device, DeviceState
-import threading
 from enum import Enum
 from threading import Lock
 from typing import Dict, Any
@@ -38,7 +37,7 @@ class Robot():
             RobotState.J : lambda : self.__get_jacobian()
         }
         self.__state: Dict[RobotState, Any] = dict()
-        self.data_collect_hz = 50
+        self.data_collect_hz = 100
 
     
     def __get_jacobian(self):
@@ -73,7 +72,7 @@ class Robot():
         state = self.__state[robot_state]
         self.__state_locks[robot_state].release()
         return state
-        
+
     def __set_state(self, state_var: RobotState):
         self.__state_locks[state_var].acquire()
         func = self.__state_var_map[state_var]
@@ -83,17 +82,6 @@ class Robot():
 
     def is_running(self):
         return self.running
-    
-    # def collect_robot_state(self):
-    #     while self.running:
-    #         for var in RobotState:
-    #             self.__set_state(var)
-    #         time.sleep( float(1.0/float(self.data_collect_hz)) )
-
-    # def collect_device_state(self, device):
-    #     while self.running:
-    #         device.update_state()
-    #         time.sleep( float(1.0/float(self.data_collect_hz)) )
 
     def __update_state(self):
         for var in RobotState:
@@ -101,16 +89,17 @@ class Robot():
     
     def start(self):
         self.running = True
-        # device_data_threads = [threading.Thread(target=self.collect_device_state, args=[dev]) for dev in self.sub_devices]
-        # robot_data_thread = threading.Thread(target=self.collect_robot_state)
-        # for thread in device_data_threads:
-        #     thread.start()
-        # robot_data_thread.start()
+        INTERVAL = float(1.0/float(self.data_collect_hz))
+        prev_time = time.time()
         while self.running:
             for dev in self.sub_devices:
                 dev.update_state()
             self.__update_state()
-            time.sleep( float(1.0/float(self.data_collect_hz)) )
+            curr_time = time.time()
+            diff = curr_time - prev_time
+            delay = max(INTERVAL - diff, 0)
+            time.sleep(delay)
+            prev_time = curr_time
     
     def stop(self):
         self.running = False
