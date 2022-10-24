@@ -70,10 +70,11 @@ class CollectData(ControlBase):
             
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(self.targets)
+            self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
             
             # Generate an OSC signal to steer robot toward the targets
-            for force_idx, force  in zip(*ctrlr_output):
-                self.sim.data.ctrl[force_idx] = force
+            # for force_idx, force  in zip(*ctrlr_output):
+            #     self.sim.data.ctrl[force_idx] = force
 
             # Step simulator / Render scene
             self.sim.step()
