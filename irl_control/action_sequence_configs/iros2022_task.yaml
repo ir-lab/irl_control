@@ -75,14 +75,16 @@ iros2022_demo_sequence:
         target_xyz: [[0,0,0], [-0.215, 0.61, 0.3], [0.285, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Pre-Insert-Hover
-        max_error: 0.05
+        max_error: 0.04
         noise: [0.0, 0.001]
     # Insert
-    -   action: WP
-        target_xyz: [[0,0,0], [-0.215, 0.61, 0.24], [0.285, 0.59, 0.24]]
+    -   action: INTERP
+        target_xyz: [[0,0,0], [-0.215, 0.61, 0.23], [0.285, 0.59, 0.23]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Insertion
         max_error: 0.05
+        steps: 20
+        noise: [0.0, 0.001]
 
 iros2022_release_sequence:
     # Open gripper for 1 second

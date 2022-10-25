@@ -47,22 +47,6 @@ class CollectData(ControlBase):
         action_config_name = 'iros2022_task.yaml'
         self.action_config = self.get_action_config(action_config_name)
         super().__init__(self.action_config["device_config"], robot_config_file, scene_file)
-
-    def send_bip(self, forces, gripper_force:float=None, update_errors:bool=True):      
-        # Apply forces to the main robot
-        for force_idx, force  in zip(*forces):
-            self.sim.data.ctrl[force_idx] = force
-        # Apply gripper force to the active arm
-        if gripper_force:
-            for idx in [7,14]:
-                self.sim.data.ctrl[idx] = gripper_force
-                
-        # Update the errors for every device
-        if update_errors:
-            for device_name in self.targets.keys():
-                # Calculate the euclidean norm between target and current to obtain error
-                self.errors[device_name] = np.linalg.norm(
-                    self.controller.calc_error(self.targets[device_name], self.robot.get_device(device_name)))
            
     def run(self, demo_type: str, demo_duration: int):        
         intprim = IntprimStream()
@@ -92,11 +76,11 @@ class CollectData(ControlBase):
             
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(targets)
-            self.send_bip(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
+            self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
             
             # Step simulator / Render scene
-            self.sim.step()
-            self.viewer.render()   
+            # self.sim.step()
+            # self.viewer.render()   
             step += 1        
         
         self.run_sequence(self.action_config['iros2022_release_sequence'])
