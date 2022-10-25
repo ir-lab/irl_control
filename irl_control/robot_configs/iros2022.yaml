@@ -35,11 +35,15 @@ controller_configs:
         kv: 20
         ki: 1
         ko: 75
+        k: [1,2,3]
+        d: [0.5,1,1]
     -   name: "osc1"
         kp: 200
         kv: 50
         ki: 1
         ko: 200
+        k: [1,2,3]
+        d: [0.5,1,1]
     -   name: "osc2"
         kp: 200
         kv: 20

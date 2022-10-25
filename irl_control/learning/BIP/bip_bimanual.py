@@ -120,7 +120,7 @@ class IntprimStream():
         ret_phs = None
         ret_pred = None
         observation = feedback
-        if self.step % 300 == 0:
+        if self.step % 100 == 0:
             # observation = np.concatenate(( # 6 6 3 3 1 1 3 4
             #                 feedback["q"], feedback["dq"], feedback["force"], feedback["torque"],
             #                 [feedback["q_qpos"]], [feedback["q_qvel"]], feedback["tcp_pos"], feedback["tcp_rot"]))
@@ -143,7 +143,7 @@ class IntprimStream():
 
             # logging.info("Predicted phase {:.3f} for pose {}".format(self.last_phase, self._target_pos))
             if self._enkf:
-                self._is_done = phase >= 0.995 # 0.985
+                self._is_done = phase >= 0.915 # 0.985
                 self._phase_history.append([phase, var[0,0], var[1,1]])
                 self._joint_history.append(inferred_trajectory.T[0,:])
 
