@@ -45,5 +45,7 @@ controller_configs:
         kv: 20
         ki: 1
         ko: 75
+        k: [1,2,3]
+        d: [0.5,1,1]
     -   name: "nullspace"
         kv: 10
