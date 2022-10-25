@@ -221,7 +221,7 @@ class ControlBase(MujocoApp):
         #TODO: This needs a smarter selector
         return np.concatenate(( 
                 state["q_base"], state["q_ur5left"][2:], state["q_ur5right"][2:], # 0-1, 2-7, 8-13
-                # state["dq_base"], state["dq_ur5left"][2:], state["dq_ur5right"][2:], # 14-15, 16-21, 22-27 
+                # state["dq_base"], state["dq_ur5left"][2:], state["dq_ur5right"][2:], 
                 state["force_ur5left"], state["torque_ur5left"], state["force_ur5right"], state["torque_ur5right"], # 14-16, 17-19, 20-22, 23-25
                 state["ee_xyz_ur5left"], state["ee_xyz_ur5right"], # 26-28, 29-31
                 self.fix_rot(state["ee_quat_ur5left"]), self.fix_rot(state["ee_quat_ur5right"]) # 32-35, 36-39

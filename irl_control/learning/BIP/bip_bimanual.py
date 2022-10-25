@@ -6,6 +6,7 @@ from irl_control.learning.BIP.intprim.basis.mixture_model import MixtureModel
 from irl_control.learning.BIP.intprim.bayesian_interaction_primitives import BayesianInteractionPrimitive
 from irl_control.learning.BIP.intprim.basis.selection import Selection
 from irl_control.learning.BIP.intprim.filter.align.dtw import fastdtw
+from irl_control.learning.BIP.intprim.util.visualization import plot_distribution
 
 import numpy as np
 import glob
@@ -29,9 +30,9 @@ class IntprimStream():
         trajectories = []
         for fn in glob.glob("./data/BIP/*.csv"):
             data = np.loadtxt(fn, delimiter=',')
-            trajectories.append(data[::25,:].T)
+            trajectories.append(data[::5,:].T)
 
-        basis_scale = 0.5
+        basis_scale = 1.0
         var_scale   = 1.0/basis_scale
         j_nfunc     = np.round(5 * basis_scale).astype(dtype=np.int32)
         j_var       = 0.1 * var_scale
