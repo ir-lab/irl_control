@@ -148,13 +148,15 @@ class OSC():
             device = self.robot.get_device(device_name)
             # Calculate the error from the device EE to target
             u_task = self.__calc_error(target, device)
-           
+            stiffness = np.array(self.device_configs[device_name].get_params('k')[0] + [1]*3)
+            damping = np.array(self.device_configs[device_name].get_params('d')[0] + [1]*3)
             # Apply gains to the error terms
             if device.max_vel is not None:
                 u_task = self.__limit_vel(u_task, device)
+                u_task *= stiffness 
             else:
                 task_space_gains = self.device_configs[device.name]['task_space_gains']
-                u_task *= task_space_gains
+                u_task *= task_space_gains * stiffness
 
             # Apply kv gain
             kv = self.device_configs[device.name]['kv']
@@ -163,7 +165,7 @@ class OSC():
                 u_all[device.joint_ids_all] = -1 * kv * uv_all[device.joint_ids_all]
             else:
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
-                u_task[device.ctrlr_dof] += kv * diff
+                u_task[device.ctrlr_dof] += kv * diff * damping[device.ctrlr_dof]
             
             force = np.append(device.get_force(),device.get_torque())
             ext_f = np.append(ext_f,force[device.ctrlr_dof])

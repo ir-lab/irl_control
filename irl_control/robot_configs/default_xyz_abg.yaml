@@ -42,8 +42,10 @@ controller_configs:
         ko: 200
     -   name: "osc2"
         kp: 200
-        kv: 20
+        kv: 50
         ki: 1
         ko: 200
+        k: [1,2,3]
+        d: [0.5,1,1]
     -   name: "nullspace"
         kv: 10
