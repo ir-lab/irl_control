@@ -54,7 +54,10 @@ class CollectData(ControlBase):
         self.action_objects = self.action_config[action_object_names[0]]
         self.initialize_action_objects()
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
-
+        targets = {}
+        targets['base'] = Target()
+        targets['ur5right'] = Target()
+        targets['ur5left'] = Target()
         self.sim.step()
         step = 0
         while not intprim.is_done():
@@ -64,12 +67,16 @@ class CollectData(ControlBase):
                 print("Phase at step {}: {:.2f}".format(step, phase))
 
                 # Set Targets:
-                self.targets['ur5left'].setAllQuat(*np.take(prediction, [26,27,28, 32,33,34,35]))
-                self.targets['ur5right'].setAllQuat(*np.take(prediction, [29,30,31, 36,37,38,39]))
-                self.targets['base'].abg[2] = prediction[0]
-            
+                #self.targets['ur5left'].setAllQuat(*np.take(prediction, [26,27,28, 32,33,34,35]))
+                #self.targets['ur5right'].setAllQuat(*np.take(prediction, [29,30,31, 36,37,38,39]))
+                #self.targets['base'].abg[2] = prediction[0]
+                
+                targets['ur5left'].setAllQuat(*np.take(prediction, [26,27,28, 32,33,34,35]))
+                targets['ur5right'].setAllQuat(*np.take(prediction, [29,30,31, 36,37,38,39]))
+                targets['base'].abg[2] = prediction[0]
             # Generate an OSC signal to steer robot toward the targets
-            ctrlr_output = self.controller.generate(self.targets)
+            ctrlr_output = self.controller.generate(targets)
+            #print("ctrlr : ",ctrlr_output)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
             
             # Generate an OSC signal to steer robot toward the targets
@@ -77,8 +84,8 @@ class CollectData(ControlBase):
             #     self.sim.data.ctrl[force_idx] = force
 
             # Step simulator / Render scene
-            self.sim.step()
-            self.viewer.render()   
+            #self.sim.step()
+            #self.viewer.render()
             step += 1        
         
         self.run_sequence(self.action_config['iros2022_release_sequence'])

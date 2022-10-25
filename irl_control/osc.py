@@ -153,7 +153,7 @@ class OSC():
             # Apply gains to the error terms
             if device.max_vel is not None:
                 u_task = self.__limit_vel(u_task, device)
-                u_task *= stiffness 
+                u_task *= stiffness
             else:
                 task_space_gains = self.device_configs[device.name]['task_space_gains']
                 u_task *= task_space_gains * stiffness
@@ -197,5 +197,4 @@ class OSC():
             dev = self.robot.sub_devices_dict[dev_name]
             forces.append(u_all[dev.actuator_trnids])
             force_idxs.append(dev.ctrl_idxs)
-        
         return force_idxs, forces 
