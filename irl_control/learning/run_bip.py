@@ -83,6 +83,8 @@ class CollectData(ControlBase):
             # self.viewer.render()   
             step += 1        
         
+        self.targets = targets
+        
         self.run_sequence(self.action_config['iros2022_release_sequence'])
 
         # Close Simulator

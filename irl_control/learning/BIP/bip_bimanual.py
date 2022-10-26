@@ -143,7 +143,7 @@ class IntprimStream():
 
             # logging.info("Predicted phase {:.3f} for pose {}".format(self.last_phase, self._target_pos))
             if self._enkf:
-                self._is_done = phase >= 0.99 # 0.985
+                self._is_done = phase >= 0.93 # 0.985
                 self._phase_history.append([phase, var[0,0], var[1,1]])
                 self._joint_history.append(inferred_trajectory.T[0,:])
 
