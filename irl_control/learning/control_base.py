@@ -170,8 +170,8 @@ class ControlBase(MujocoApp):
         while not self.is_done(params["max_error"], step):
             step += 1
             # Limit the max velocity of the robot according to the given params
-            for device_name in self.errors.keys():
-                self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
+            # for device_name in self.errors.keys():
+            #     self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
             ctrlr_output = self.controller.generate(self.targets)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
     
