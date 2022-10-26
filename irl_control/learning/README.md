@@ -2,6 +2,17 @@
 
 This example demonstrates the work presented in our paper _A System for Imitation Learning of Contact-Rich Bimanual Manipulation Policies_
 
+## Citation
+
+```
+@article{stepputtis2022bimanual,
+  author    = {Stepputtis, Simon and Bandari, Maryam and Schaal, Stefan and Ben Amor, Heni},
+  title     = {A System for Imitation Learning of Contact-Rich Bimanual Manipulation Policies},
+  journal   = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year      = {2022},
+}
+```
+
 In order to run the code, please create a new conda environment from the provided _environment.yaml_ file
 ```
 conda env create -f environment.yml
