@@ -33,3 +33,15 @@ python run_bip.py
   year      = {2022},
 }
 ```
+
+```
+@misc{https://doi.org/10.48550/arxiv.1908.04955,
+  doi = {10.48550/ARXIV.1908.04955}, 
+  url = {https://arxiv.org/abs/1908.04955},  
+  author = {Campbell, Joseph and Stepputtis, Simon and Amor, Heni Ben},
+  title = {Probabilistic Multimodal Modeling for Human-Robot Interaction Tasks},
+  publisher = {arXiv},
+  year = {2019},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+```
