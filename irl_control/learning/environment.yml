@@ -1,4 +1,4 @@
-name: google
+name: bimanual
 channels:
   - conda-forge
 dependencies:

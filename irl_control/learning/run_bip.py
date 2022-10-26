@@ -77,11 +77,11 @@ class CollectData(ControlBase):
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(targets)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
-            
-            # Step simulator / Render scene
-            # self.sim.step()
-            # self.viewer.render()   
             step += 1        
+
+            # if step > 2000 and step < 4000:
+            #     for id in  [self.sim.model.body_name2id(v) for v in ["ur_EE_ur5left", "ur_EE_ur5right"]]:
+            #         self.sim.data.xfrc_applied[id] = [20,0,0,0,0,0] 
         
         self.targets = targets
         
