@@ -64,7 +64,7 @@ iros2022_pickup_sequence:
 iros2022_demo_sequence:
     # Hover above the female object
     -   action: INTERP
-        target_xyz: [[0,0,0], [-0.215, 0.61, 0.3], [0.285, 0.59, 0.3]]
+        target_xyz: [[0,0,0], [-0.225, 0.59, 0.3], [0.275, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Transfer
         max_error: 0.2
@@ -72,14 +72,14 @@ iros2022_demo_sequence:
         noise: [0.0, 0.001]
     # Make sure the last waypoint is reacht closely
     -   action: WP
-        target_xyz: [[0,0,0], [-0.215, 0.61, 0.3], [0.285, 0.59, 0.3]]
+        target_xyz: [[0,0,0], [-0.225, 0.59, 0.3], [0.275, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Pre-Insert-Hover
         max_error: 0.04
         noise: [0.0, 0.001]
     # Insert
     -   action: INTERP
-        target_xyz: [[0,0,0], [-0.215, 0.61, 0.23], [0.285, 0.59, 0.23]]
+        target_xyz: [[0,0,0], [-0.225, 0.59, 0.23], [0.275, 0.59, 0.23]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Insertion
         max_error: 0.05

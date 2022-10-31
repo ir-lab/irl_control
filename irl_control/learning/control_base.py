@@ -4,6 +4,7 @@ import numpy as np
 from typing import Tuple
 import threading
 from irl_control import MujocoApp, OSC
+from irl_control.device import DeviceState
 from irl_control.utils import Target
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
 from enum import Enum
@@ -63,8 +64,9 @@ class ControlBase(MujocoApp):
         # Start collecting device states from simulator
         # NOTE: This is necessary when you are using OSC, as it assumes
         #       that the robot.start() thread is running.
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
+
         # Keep track of device target errors
         self.viewer = MjViewer(self.sim)
         self.viewer.cam.azimuth = 90
@@ -137,10 +139,9 @@ class ControlBase(MujocoApp):
         if step < 25:
             return False
         # Based on velocity
-        state = self.robot.get_device_states()
         vel = []
-        for device_name, device_state in state.items():
-            vel += device_state[DeviceState.DQ].tolist()
+        for device_name in self.errors.keys():
+            vel += self.robot.get_device(device_name).get_state(DeviceState.DQ).tolist()
         vel = np.asarray(vel)
         if np.all(np.isclose(np.zeros_like(vel), vel, rtol=max_error, atol=max_error)):
             return True
@@ -169,9 +170,6 @@ class ControlBase(MujocoApp):
         step = 0
         while not self.is_done(params["max_error"], step):
             step += 1
-            # Limit the max velocity of the robot according to the given params
-            # for device_name in self.errors.keys():
-            #     self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
             ctrlr_output = self.controller.generate(self.targets)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
     
@@ -202,7 +200,7 @@ class ControlBase(MujocoApp):
             self.viewer.render()
         
         if self.record:
-            feedback = self.robot.getState()
+            feedback = self.robot.get_device_states()
             self.recording.append(self.get_clean_state(feedback))
         
         # Update the errors for every device
@@ -215,11 +213,10 @@ class ControlBase(MujocoApp):
     def get_clean_state(self, state):
         #TODO: This needs a smarter selector
         return np.concatenate(( 
-                state["q_base"], state["q_ur5left"][2:], state["q_ur5right"][2:], # 0-1, 2-7, 8-13
-                # state["dq_base"], state["dq_ur5left"][2:], state["dq_ur5right"][2:], 
-                state["force_ur5left"], state["torque_ur5left"], state["force_ur5right"], state["torque_ur5right"], # 14-16, 17-19, 20-22, 23-25
-                state["ee_xyz_ur5left"], state["ee_xyz_ur5right"], # 26-28, 29-31
-                self.fix_rot(state["ee_quat_ur5left"]), self.fix_rot(state["ee_quat_ur5right"]) # 32-35, 36-39
+                state['base'][DeviceState.Q_ACTUATED], state['ur5left'][DeviceState.Q_ACTUATED], state['ur5right'][DeviceState.Q_ACTUATED], # 0-1, 2-7, 8-13
+                state['ur5left'][DeviceState.FORCE], state['ur5left'][DeviceState.TORQUE], state['ur5right'][DeviceState.FORCE], state['ur5right'][DeviceState.TORQUE], # 14-16, 17-19, 20-22, 23-25
+                state['ur5left'][DeviceState.EE_XYZ], state['ur5right'][DeviceState.EE_XYZ], # 26-28, 29-31
+                self.fix_rot(state['ur5left'][DeviceState.EE_QUAT]), self.fix_rot(state['ur5right'][DeviceState.EE_QUAT]) # 32-35, 36-39
         ))
 
     def update_action_ctrl_params(self, params, action: Action):

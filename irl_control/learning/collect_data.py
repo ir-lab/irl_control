@@ -102,8 +102,8 @@ class CollectData(ControlBase):
         
         # # Join threads / Stop the simulator 
         # time_thread.join()
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":

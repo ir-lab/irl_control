@@ -14,8 +14,9 @@ class RobotState(Enum):
     J = 'JACOBIAN'
 
 class Robot():
-    def __init__(self, sub_devices: List[Device], robot_name, sim, collect_hz=1000):
+    def __init__(self, sub_devices: List[Device], robot_name, sim, use_sim, collect_hz=1000):
         self.sim = sim
+        self.__use_sim = use_sim
         self.sub_devices = sub_devices
         self.sub_devices_dict: Dict[str, Device] = dict()
         for dev in self.sub_devices:
@@ -70,13 +71,18 @@ class Robot():
         M = M[np.ix_(self.joint_ids_all, self.joint_ids_all)]
         return M
 
-    def get_state(self, robot_state: RobotState):
-        self.__state_locks[robot_state].acquire()
-        state = copy.copy(self.__state[robot_state])
-        self.__state_locks[robot_state].release()
+    def get_state(self, state_var: RobotState):
+        if self.__use_sim:
+            func = self.__state_var_map[state_var]
+            state = copy.copy(func())
+        else:
+            self.__state_locks[state_var].acquire()
+            state = copy.copy(self.__state[state_var])
+            self.__state_locks[state_var].release()
         return state
 
     def __set_state(self, state_var: RobotState):
+        assert self.__use_sim is False
         self.__state_locks[state_var].acquire()
         func = self.__state_var_map[state_var]
         value = func()
@@ -85,13 +91,17 @@ class Robot():
 
     def is_running(self):
         return self.running
+    
+    def is_using_sim(self):
+        return self.__use_sim
 
     def __update_state(self):
+        assert self.__use_sim is False
         for var in RobotState:
             self.__set_state(var)
     
     def start(self):
-        assert self.running is False
+        assert self.running is False and self.__use_sim is False
         self.running = True
         interval = float(1.0/float(self.data_collect_hz))
         prev_time = time.time()
@@ -106,6 +116,7 @@ class Robot():
             prev_time = curr_time
     
     def stop(self):
+        assert self.running is True and self.__use_sim is False
         self.running = False
 
     def get_device(self, device_name: str) -> Device:

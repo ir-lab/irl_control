@@ -128,7 +128,9 @@ class OSC():
             ----------
             targets: dict of device names mapping to Target objects
         """
-        assert self.robot.is_running(), "Robot must be running!"
+        if self.robot.is_using_sim() is False:
+            assert self.robot.is_running(), "Robot must be running!"
+        
         robot_state = self.robot.get_all_states()
         # Get the Jacobian for the all of devices passed in
         Js, J_idxs = robot_state[RobotState.J]
@@ -156,9 +158,9 @@ class OSC():
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
             # Calculate the error from the device EE to target
-            u_task = self.__calc_error(target, device)
-            stiffness = np.array(self.device_configs[device_name].get_params('k')[0] + [1]*3)
-            damping = np.array(self.device_configs[device_name].get_params('d')[0] + [1]*3)
+            u_task = self.calc_error(target, device)
+            stiffness = np.array(self.device_configs[device_name]['k'] + [1]*3)
+            damping = np.array(self.device_configs[device_name]['d'] + [1]*3)
             # Apply gains to the error terms
             if device.max_vel is not None:
                 u_task = self.__limit_vel(u_task, device)

@@ -64,14 +64,14 @@ class CollectData(ControlBase):
         self.sim.step()
         step = 0
         while not intprim.is_done():
-            state = self.get_clean_state(self.robot.getState())
+            state = self.get_clean_state(self.robot.get_device_states())
             phase, prediction = intprim.update_stream(state)
             if phase is not None:
                 print("Phase at step {}: {:.2f}".format(step, phase))
             
                 # Set Targets:
-                targets['ur5left'].setAllQuat(*np.take(prediction, [26,27,28, 32,33,34,35]))
-                targets['ur5right'].setAllQuat(*np.take(prediction, [29,30,31, 36,37,38,39]))
+                targets['ur5left'].setAllQuat(*np.take(prediction, [25,26,27, 31,32,33,34]))
+                targets['ur5right'].setAllQuat(*np.take(prediction, [28,29,30, 35,36,37,38]))
                 targets['base'].abg[2] = prediction[0]
             
             # Generate an OSC signal to steer robot toward the targets

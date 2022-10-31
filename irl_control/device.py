@@ -6,7 +6,9 @@ import copy
 
 class DeviceState(Enum):
     Q = 'Q'
+    Q_ACTUATED = 'Q_ACTUATED'
     DQ = 'DQ'
+    DQ_ACTUATED = 'DQ_ACTUATED'
     DDQ = 'DDQ'
     EE_XYZ = 'EE_XYZ'
     EE_QUAT = 'EE_QUAT'
@@ -20,8 +22,9 @@ class Device():
     that is passed to MujocoApp. It collects data from the simulator, obtaining the 
     desired device states.
     """
-    def __init__(self, device_yml: Dict, model, sim):
+    def __init__(self, device_yml: Dict, model, sim, use_sim: bool):
         self.sim = sim
+        self.__use_sim = use_sim
         # Assign all of the yaml parameters
         self.name = device_yml['name']
         self.max_vel = device_yml['max_vel']
@@ -67,12 +70,7 @@ class Device():
         actuator_trnids = model.actuator_trnid[:,0]
         self.ctrl_idxs = np.intersect1d(actuator_trnids, self.joint_ids_all, return_indices=True)[1]
         self.actuator_trnids = actuator_trnids[self.ctrl_idxs]
-        
-        # if self.name == "ur5right" or self.name == "ur5left":
-        #     self.sim.data.qpos[self.joint_ids[2:]] = np.copy(self.start_angles)
-        # elif self.name == "base":
-        #     self.sim.data.qpos[self.joint_ids[:1]] = np.copy(self.start_angles)
-        # self.sim.forward()
+
 
         # Check that the 
         if np.sum(np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])) > len(self.joint_ids):
@@ -81,7 +79,9 @@ class Device():
         # Initialize dicts to keep track of the state variables and locks
         self.__state_var_map: Dict[DeviceState, function] = {
             DeviceState.Q : lambda : self.sim.data.qpos[self.joint_ids_all],
+            DeviceState.Q_ACTUATED : lambda : self.sim.data.qpos[self.joint_ids],
             DeviceState.DQ : lambda : self.sim.data.qvel[self.joint_ids_all],
+            DeviceState.DQ_ACTUATED : lambda : self.sim.data.qvel[self.joint_ids],
             DeviceState.DDQ : lambda : self.sim.data.qacc[self.joint_ids_all],
             DeviceState.EE_XYZ : lambda : self.sim.data.get_body_xpos(self.EE),
             DeviceState.EE_QUAT : lambda : self.sim.data.get_body_xquat(self.EE),
@@ -95,8 +95,8 @@ class Device():
         
         # These are the that keys we should use when returning data from get_all_states()
         self.concise_state_vars = [
-            DeviceState.Q, 
-            DeviceState.DQ, 
+            DeviceState.Q_ACTUATED, 
+            DeviceState.DQ_ACTUATED, 
             DeviceState.EE_XYZ, 
             DeviceState.EE_QUAT,
             DeviceState.FORCE,
@@ -164,6 +164,7 @@ class Device():
         """
         Set the state of the device corresponding to the key value (if exists)    
         """
+        assert self.__use_sim is False
         self.__state_locks[state_var].acquire()
         var_func = self.__state_var_map[state_var]
         var_value = var_func()
@@ -174,10 +175,14 @@ class Device():
         """
         Get the state of the device corresponding to the key value (if exists)
         """
-        self.__state_locks[state_var].acquire()
-        value = copy.copy(self.__state[state_var])
-        self.__state_locks[state_var].release()
-        return value
+        if self.__use_sim:
+            func = self.__state_var_map[state_var]
+            state = copy.copy(func())
+        else:
+            self.__state_locks[state_var].acquire()
+            state = copy.copy(self.__state[state_var])
+            self.__state_locks[state_var].release()
+        return state
     
     def get_all_states(self):
         return dict([(key, self.get_state(key)) for key in self.concise_state_vars])
@@ -186,6 +191,7 @@ class Device():
         """
         This should running in a thread: Robot.start()
         """
+        assert self.__use_sim is False
         for var in DeviceState:
             self.__set_state(var)
         

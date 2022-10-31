@@ -40,13 +40,13 @@ class IntprimStream():
         tcp_var     = 0.25 * var_scale
         ft_nfunc    = np.round(7 * basis_scale).astype(dtype=np.int32)
 
-        dof_names = ["B0", "B1", "L1", "L2", "L3", "L4", "L5", "L6", "R1", "R2", "R3", "R4", "R5", "R6", 
+        dof_names = ["B1", "L1", "L2", "L3", "L4", "L5", "L6", "R1", "R2", "R3", "R4", "R5", "R6", 
             "FL_X", "FL_Y", "FL_Z", "TL_X", "TL_Y", "TL_Z", "FR_X", "FR_Y", "FR_Z", "TR_X", "TR_Y", "TR_Z",
             "TCPL_X", "TCPL_Y", "TCPL_Z", "TCPR_X", "TCPR_Y", "TCPR_Z",
             "QL_W", "QL_X", "QL_Y", "QL_Z", "QR_W", "QR_X", "QR_Y", "QR_Z"]
         basis_models = []
         # Joints
-        basis_models.append(GaussianModel(j_nfunc, j_var, ["B0", "B1", "L1", "L2", "L3", "L4", "L5", "L6", "R1", "R2", "R3", "R4", "R5", "R6"]))
+        basis_models.append(GaussianModel(j_nfunc, j_var, ["B1", "L1", "L2", "L3", "L4", "L5", "L6", "R1", "R2", "R3", "R4", "R5", "R6"]))
         # F/T
         basis_models.append(PolynomialModel(ft_nfunc, ["FL_X", "FL_Y", "FL_Z", "TL_X", "TL_Y", "TL_Z", "FR_X", "FR_Y", "FR_Z", "TR_X", "TR_Y", "TR_Z"]))
         # TCP
