@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+body {
+    margin: 0px 8px 8px 8px;
+}
+
+/* Style the lines by removing the fill and applying a stroke */
+path.observed {
+    fill: none;
+    stroke: #ffab00;
+    stroke-width: 3;
+}
+
+path.generated {
+    fill: none;
+    stroke: #4286f4;
+    stroke-width: 3;
+}
+
+path.pdf {
+    fill: #ffd175;
+    stroke: #ffab00;
+    stroke-width: 3;
+}
+
+path.old {
+    stroke: #fc5d5d;
+    stroke-width: 1;
+}
+
+path.oracle {
+    fill: none;
+    stroke: #6DCC6F;
+    stroke-width: 3;
+    stroke-dasharray: 5;
+}
+
+.overlay {
+    fill: none;
+    pointer-events: all;
+}
+
+/* Style the dots by assigning a fill and stroke */
+.dot {
+    fill: #ffab00;
+    stroke: #fff;
+}
+
+.focus circle {
+    fill: none;
+    stroke: steelblue;
+}
+
+svg {
+    display: block;
+}
+
+.observed-svg {
+    float: left;
+}
+
+.generated-svg {
+    float: left;
+}
+
+.ensemble-svg {
+    float: left;
+}
+
+.header {
+    /*text-align:center;*/
+    position: fixed;
+    width: 100%;
+    background: rgba(130, 255, 148, 0.2);
+}
+
+.header select {
+    float: left;
+    margin-right: 20px;
+}
+
+button {
+    white-space: normal;
+    text-decoration: none;
+    display: inline-block;
+    padding: 8px 16px;
+    vertical-align: middle;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+}
+
+button:hover {
+    background-color: #ddd;
+    color: black;
+}
+
+.navigation {
+    background-color: #f1f1f1;
+    color: black;
+    border-radius: 50%;
+}
+
+.active {
+    background-color: #6d6d6d;
+    color: white;
+}
+
+.active:hover {
+    background-color: #6d6d6d;
+    color: white;
+}
+
+.timestep {
+    display: inline-block;
+}
+
+.timestep-overlay {
+    cursor: pointer;
+    fill: rgb(119, 119, 119);
+    fill-opacity: 0.3;
+    stroke: rgb(255, 255, 255);
+    shape-rendering: crispedges;
+}
+
+.mean-overlay {
+    stroke: rgb(255, 0, 0);
+    stroke-width: 2;
+    stroke-dasharray: 6;
+}
+
+.high-factor {
+    fill-opacity: 1.0;
+    stroke: rgb(255, 0, 0);
+    stroke-opacity: 0.0;
+    stroke-width: 4;
+}
+
+.high-factor:hover {
+    fill-opacity: 1.0;
+    stroke-opacity: 1.0;
+}
+
+/*.low-factor {
+    fill-opacity: 1.0;
+    stroke: rgb(255, 0, 0);
+    stroke-opacity: 0.0;
+    stroke-width: 4;
+}
+
+.low-factor:hover {
+    fill-opacity: 1.0;
+    stroke-opacity: 1.0;
+}*/
+
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 300px;
+    height: 50px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+</style>
+<!-- Body tag is where we will append our SVG and SVG objects-->
+<body>
+<div class="header">
+    <button id="backward-nav" class="navigation">&#8249;</button>
+    <div id="timestep-info" class="timestep"></div>
+    <button id="forward-nav" class="navigation">&#8250;</button>
+    <div id="file-info" class="timestep"></div>
+</div>
+<div class="observed-svg"></div>
+<div class="generated-svg"></div>
+<div class="ensemble-svg"></div>
+</body>
+
+<!-- Load in the d3 library -->
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<!--<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>-->
+<!--<script src="d3-tip.js"></script>-->
+<script>
+
+// 1. Use the margin convention practice
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+//var width = window.innerWidth - margin.left - margin.right; // Use the window's width
+//var height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
+var width = 400;
+var height = 100;
+var header_height = 50;
+
+var generated_buffer = 4000;
+
+var header = d3.select(".header")
+    .attr("width", (width * 2) + margin.left + margin.right)
+    .attr("width", header_height);
+var observed_svg = d3.select(".observed-svg")
+    .attr("width", width + margin.left + margin.right);
+var generated_svg = d3.select(".generated-svg")
+    .attr("width", width + margin.left + margin.right);
+var ensemble_svg = d3.select(".ensemble-svg")
+    .attr("width", width + margin.left + margin.right);
+
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+var factor_zoom = d3.zoom()
+    .on("zoom", factor_zoomed);
+
+// Maps clock time stamps to width in a linear manner.
+var clock_x_scale = d3.scaleLinear()
+    .range([width, 0]);
+
+// Maps num samples to clock time stamps in a linear manner.
+var observed_x_scale = d3.scaleLinear();
+var generated_x_scale = d3.scaleLinear();
+var temp_generated_x_scales = [];
+
+// Different features have different oracle x scales due to different number of samples.
+var oracle_x_scale = [];
+
+var ensemble_x_scale = d3.scaleLinear()
+    .range([0, width]);
+var pdf_x_scales = [];
+var factor_x_scales = [
+    d3.scaleBand()
+        .range([0, width]),
+    d3.scaleBand()
+]
+
+var observed_svgs = [];
+var generated_svgs = [];
+var ensemble_svgs = [];
+var pdf_svgs = [];
+var factor_svgs = [];
+
+var observed_y_scales = [];
+var generated_y_scales = [];
+var ensemble_y_scale = d3.scaleLinear()
+    .range([width, 0]);
+var pdf_y_scales = [];
+var factor_y_scales = [
+    d3.scaleBand()
+        .range([width, 0]),
+    d3.scaleBand()
+]
+
+// var factor_color_scale = d3.scaleSequential(d3.interpolateRdBu).range("red", "white", "red");
+var factor_color_scale = d3.scaleLinear().range(["#b70000", "#e2d9d9", "#b70000"]);
+
+var generated_y_axes = [];
+
+var generated_y_feature_domains = [];
+
+// Array of clock time steps, added in the order they occur. So timestep at index 0 is the first one clock timestamp, and the last is the last.
+var inference_timesteps = [];
+// A map where the key is the clock timestamp and the value is an object containing the corresponding observed value indices.
+var timestep_map = d3.map();
+
+// Note that the data arrays contain data from all DoFs (observed and generated!). So make sure to use proper indexing relative to dof_names!
+// Observed data is Num Features x Num Samples
+var observed_data = [];
+// Generated is Num Features x Num Predictions (Timesteps) x Num Samples
+var generated_data = [];
+// Oracle is Num Features x Num Samples
+var oracle_data = [];
+// Ensemble is Num Predictions (Timesteps) x Num Samples x Num Features. In this case, num features is 2 since it has been projected to a 2D space.
+var ensemble_data = [];
+// PDF is Num Features x Num Predictions (Timesteps) x Num Samples. In this case, num features is also 2 since the first feature is phase and second feature is velocity.
+var pdf_data = [];
+var pdf_mean = [];
+var pdf_cov = [];
+// Factor data is Num Predictions (Timesteps) x 2D array of 2D arrays, it's not a true 4D array though because the inner 2D array is not a uniform size.
+// The outer array is Observed DoFs x Generated DoFs, and each value is another 2D array which is Observed Weights x Generated Weights.
+var factor_data = [];
+// Factor ranges is Num Predictions (Timesteps) x 2, and specifies [max, min] value of the covariance set for each timestep.
+var factor_domains = [];
+var factor_legend = [];
+
+// A map where the key is the observed value index and the value is the clock time stamp. Essentially a inverse lookup of timestep_map.
+var observed_timestep_lookup = d3.map();
+var oracle_timestep_lookup = d3.map();
+
+// A linear scale that maps the generated length to the clock timestamp range this interaction covers.
+var pdf_idx_timestep_scale = [];
+
+var current_timestep = 0;
+var navigation_interval_id = 0;
+
+var time_formatter = d3.format(".2f");
+var small_num_formatter = d3.format(".2e");
+
+// Need to add all of these into the XML.
+var dof_names = [];
+var generated_indices = [];
+var observed_indices = [];
+var generated_length = 0;
+var ensemble_names = [];
+var pdf_names = [];
+var pdf_ranges = [];
+var pdf_num_samples = [];
+var max_oracle_clock = 0;
+var min_oracle_clock = 0;
+var use_spt = false;
+var spt_phase = 0;
+
+var latent_state_indices = [];
+var latent_state_stride = 0;
+
+var factor_zoomed = false;
+var factor_zoom_factor = 1.0
+
+var file_list = [];
+var active_file_idx = -1;
+
+d3.select("body").on("keydown", function()
+{
+    var key = d3.event.keyCode;
+    if(key == 39 && !d3.event.repeat)
+    {
+        start_nav_forward();
+    }
+    else if(key == 37 && !d3.event.repeat)
+    {
+        start_nav_backward();
+    }
+}).on("keyup", function()
+{
+    var key = d3.event.keyCode;
+    if(key == 39)
+    {
+        stop_nav_forward();
+    }
+    else if(key == 37)
+    {
+        stop_nav_backward();
+    }
+});
+
+d3.html("http://localhost:8000").then(function(response) {
+    var file_selector = d3.select("#file-selector");
+
+    file_list.push("Please select file");
+
+    response.querySelectorAll("ul li a").forEach(function(node)
+    {
+        var name = node.textContent;
+        if(name.substring(name.length - 4) == ".xml")
+        {
+            file_list.push(node.textContent);
+        }
+    });
+
+    d3.select(".header")
+        .insert("select", ":first-child")
+        .attr("id", "file-selector")
+        .selectAll("option")
+        .data(file_list)
+        .enter().append("option")
+        .text(function(element, idx) { return element})
+        .attr("value", function(element, idx) { return idx});
+
+    d3.select("#file-selector")
+    .on("change", function(d)
+    {
+        idx = this.value;
+        if(idx != 0)
+        {
+            load_file(file_list[idx]);
+            active_file_idx = idx
+
+            // Set timestep information
+            d3.select("#file-info")
+                .text(file_list[idx]);
+        }
+    });
+});
+
+function load_file(file_name)
+{
+    d3.xml("http://localhost:8000/" + file_name).then(function(xml_data)
+    {
+        reset_values();
+
+        init_timesteps(xml_data);
+        read_meta_info(xml_data);
+        read_dofs(xml_data);
+
+        read_observed_data(xml_data);
+        read_generated_data(xml_data);
+        read_oracle_data(xml_data);
+        read_ensemble_data(xml_data);
+        read_pdf_data(xml_data);
+        read_covariance_data(xml_data);
+
+        create_observed_plots();
+        create_generated_plots();
+        create_ensemble_plots();
+        create_pdf_plots();
+        create_factor_plot();
+
+        create_navigation_buttons();
+
+        set_active_timestep(null, current_timestep);
+
+    }, function(error)
+    {
+        console.log("Failed to retrieve XML file.");
+    });
+}
+
+function reset_values()
+{
+    observed_svg.html("");
+    generated_svg.html("");
+    ensemble_svg.html("");
+
+    clock_x_scale = d3.scaleLinear()
+        .range([0, width]);
+    // All graphs use the same x scale as this is only based on the temporal value of the interaction, which is global.
+    observed_x_scale = d3.scaleLinear();
+        // .range([0, width]); // output
+    generated_x_scale = d3.scaleLinear();
+        // .range([0, width]); // output
+    temp_generated_x_scales = [];
+    oracle_x_scale = []
+    ensemble_x_scale = d3.scaleLinear()
+        .range([0, width]);
+    pdf_x_scales = [];
+    factor_x_scales = [
+        d3.scaleBand()
+            .range([0, width]),
+        d3.scaleBand()
+    ]
+
+    observed_svgs = [];
+    generated_svgs = [];
+    ensemble_svgs = [];
+    pdf_svgs = [];
+    factor_svgs = [];
+
+    observed_y_scales = [];
+    generated_y_scales = [];
+    ensemble_y_scale = d3.scaleLinear()
+        .range([width, 0]);
+    pdf_y_scales = [];
+    factor_y_scales = [
+        d3.scaleBand()
+            .range([width, 0]),
+        d3.scaleBand()
+    ]
+
+    generated_y_axes = [];
+
+    generated_y_feature_domains = [];
+
+    // Array of clock time steps, added in the order they occur. So timestep at index 0 is the first one clock timestamp, and the last is the last.
+    inference_timesteps = [];
+    // A map where the key is the clock timestamp and the value is an object containing the corresponding observed value indices.
+    timestep_map = d3.map();
+
+    // Note that the data arrays contain data from all DoFs (observed and generated!). So make sure to use proper indexing relative to dof_names!
+    // Observed data is Num Features x Num Samples
+    observed_data = [];
+    // Generated is Num Features x Num Predictions (Timesteps) x Num Samples
+    generated_data = [];
+    // Oracle is Num Features x Num Samples
+    oracle_data = [];
+    // Ensemble is Num Predictions (Timesteps) x Num Samples x Num Features. In this case, num features is 2 since it has been projected to a 2D space.
+    ensemble_data = [];
+    // PDF is Num Features x Num Predictions (Timesteps) x Num Samples. In this case, num features is also 2 since the first feature is phase and second feature is velocity.
+    pdf_data = [];
+    pdf_mean = [];
+    pdf_cov = [];
+    factor_data = [];
+    factor_domains = [];
+    factor_legend = [];
+
+    // A map where the key is the observed value index and the value is the clock time stamp. Essentially a inverse lookup of timestep_map.
+    observed_timestep_lookup = d3.map();
+    oracle_timestep_lookup = d3.map();
+
+    pdf_idx_timestep_scale = [];
+
+    current_timestep = 0;
+    navigation_interval_id = 0;
+
+    // Need to add all of these into the XML.
+    dof_names = [];
+    generated_indices = [];
+    observed_indices = [];
+    generated_length = 0;
+    ensemble_names = [];
+    pdf_names = [];
+    pdf_ranges = [];
+    pdf_num_samples = [];
+    max_oracle_clock = 0;
+    min_oracle_clock = 0;
+    use_spt = false;
+    spt_phase = 0;
+
+    latent_state_indices = [];
+    latent_state_stride = 0;
+
+    factor_zoomed = false;
+    factor_zoom_factor = 1.0
+}
+
+function init_timesteps(xml_data)
+{
+    var num_timesteps = 0;
+    inference_timesteps = [].map.call(xml_data.querySelectorAll("timestep"), function(timestep)
+    {
+        var clock = timestep.getAttribute("clock");
+        timestep_map.set(clock, {
+            index: num_timesteps,
+            observed_data_indices: {start: 0, end: 0},
+            oracle_data_indices: new Map()
+        });
+
+        num_timesteps += 1;
+
+        return timestep.getAttribute("clock");
+    });
+}
+
+function read_meta_info(xml_data)
+{
+    var node = xml_data.querySelector("stats bag_name");
+
+    if(node)
+    {
+        bag_name = node.textContent;
+        var file_info = d3.select("#file-info");
+        file_info.text(file_info.text() + " (" + bag_name + ")");
+    }
+}
+
+function read_dofs(xml_data)
+{
+    var node = xml_data.querySelector("stats dof dof_names");
+    dof_names = node.textContent.split(',');
+
+    node = xml_data.querySelector("stats dof observed_indices");
+    if(node.textContent != "")
+    {
+        observed_indices = node.textContent.split(',');
+        for(var idx = 0; idx < observed_indices.length; idx++)
+        {
+            observed_indices[idx] = parseInt(observed_indices[idx]);
+        }
+    }
+
+    node = xml_data.querySelector("stats dof generated_indices");
+    if(node.textContent != "")
+    {
+        generated_indices = node.textContent.split(',');
+        for(var idx = 0; idx < generated_indices.length; idx++)
+        {
+            generated_indices[idx] = parseInt(generated_indices[idx]);
+        }
+    }
+
+    node = xml_data.querySelector("stats dof response_length");
+    generated_length = parseInt(node.textContent);
+
+    node = xml_data.querySelector("stats dof ensemble_names");
+    ensemble_names = node.textContent.split(',');
+
+    node = xml_data.querySelector("stats dof pdf_names");
+    pdf_names = node.textContent.split(',');
+
+    for(var feature_idx = 0; feature_idx < pdf_names.length; feature_idx++)
+    {
+        node = xml_data.querySelector("stats dof pdf_info feature[name='" + pdf_names[feature_idx] + "']");
+        if(node)
+        {
+            pdf_ranges.push([parseFloat(node.getAttribute("min_range")), parseFloat(node.getAttribute("max_range"))]);
+            // pdf_num_samples.push(parseFloat(node.getAttribute("num_samples")));
+            pdf_num_samples.push(100);
+        }
+        else
+        {
+            // Some default arbitrary value so the script doesn't break.
+            pdf_ranges.push([-3.14, 3.14]);
+            pdf_num_samples.push(200);
+        }
+    }
+
+    latent_state_stride = 0;
+    for(var feature_idx = 0; feature_idx < dof_names.length; feature_idx++)
+    {
+        node = xml_data.querySelector("stats dof latent_state_indices feature[name='" + dof_names[feature_idx] + "']");
+        if(node)
+        {
+            indices = node.textContent.split(',');
+            parsed_indices = [];
+            for(var idx = 0; idx < indices.length; idx++)
+            {
+                var latent_index = parseInt(indices[idx]);
+                parsed_indices.push(latent_index);
+                if(latent_index > latent_state_stride)
+                {
+                    latent_state_stride = latent_index;
+                }
+            }
+            latent_state_indices.push(parsed_indices);
+        }
+        else
+        {
+            latent_state_indices.push([]);
+        }
+    }
+
+    node = xml_data.querySelector("stats dof max_oracle_clock");
+    max_oracle_clock = node.textContent;
+
+    node = xml_data.querySelector("stats dof min_oracle_clock");
+    min_oracle_clock = node.textContent;
+
+    clock_x_scale.domain([min_oracle_clock, max_oracle_clock]);
+
+    node = xml_data.querySelector("stats dof single_point_trajectory");
+    use_spt = (node.textContent == "True");
+    spt_phase = node.getAttribute("phase");
+}
+
+function read_observed_data(xml_data)
+{
+    // Create observed data maps
+    for(var feature_idx = 0; feature_idx < dof_names.length; feature_idx++)
+    {
+        var cumul_sum = 0;
+        observed_data.push([]);
+        xml_data.querySelectorAll("timestep observed feature[name='" + dof_names[feature_idx] + "']").forEach(function(feature)
+        {
+            var clock = feature.parentNode.parentNode.getAttribute("clock");
+            var values = feature.textContent.split(',');
+
+            // Push parsed values for the feature
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                observed_data[feature_idx].push(parseFloat(values[value_idx]));
+                observed_timestep_lookup.set(cumul_sum + value_idx, clock);
+            }
+
+            // Update the time step data count
+            timestep_map.get(clock).observed_data_indices.start = cumul_sum;
+            cumul_sum += values.length;
+            timestep_map.get(clock).observed_data_indices.end = cumul_sum;
+        });
+
+        observed_x_scale.domain([0, cumul_sum]);
+    }
+    observed_x_scale.range([inference_timesteps[0], inference_timesteps[inference_timesteps.length - 1]]);
+}
+
+function read_generated_data(xml_data)
+{
+    for(var feature_idx = 0; feature_idx < dof_names.length; feature_idx++)
+    {
+        generated_data.push([]);
+        generated_y_feature_domains.push(d3.extent(observed_data[feature_idx], function(d) { return d;}));
+        // First query timestep, then query for feature.
+        var timesteps = xml_data.querySelectorAll("timestep");
+        for(var timestep_idx = 0; timestep_idx < timesteps.length; timestep_idx++)
+        {
+            generated_data[feature_idx].push([]);
+
+            feature = timesteps[timestep_idx].querySelector("generated feature[name='" + dof_names[feature_idx] + "']");
+
+            var clock = timesteps[timestep_idx].getAttribute("clock");
+            var values = feature.textContent.split(',');
+
+            // Push parsed values for the feature
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                var value = parseFloat(values[value_idx]);
+                generated_data[feature_idx][timestep_idx].push(value);
+
+                if(value < generated_y_feature_domains[feature_idx][0])
+                {
+                    generated_y_feature_domains[feature_idx][0] = value;
+                }
+                else if(value > generated_y_feature_domains[feature_idx][1])
+                {
+                    generated_y_feature_domains[feature_idx][1] = value;
+                }
+            }
+        }
+    }
+
+    if(use_spt == true && spt_phase == "current")
+    {
+        generated_x_scale.domain([0, inference_timesteps.length]);
+    }
+    else
+    {
+        generated_x_scale.domain([0, generated_length - 1]);
+    }
+    generated_x_scale.range([min_oracle_clock, max_oracle_clock]);
+}
+
+function read_oracle_data(xml_data)
+{
+    // Create observed data maps
+    for(var feature_idx = 0; feature_idx < dof_names.length; feature_idx++)
+    {
+        oracle_x_scale.push(d3.scaleLinear());
+
+        var cumul_sum = 0;
+        var min_clock = NaN;
+        var max_clock = NaN;
+        oracle_data.push([]);
+        xml_data.querySelectorAll("timestep oracle feature[name='" + dof_names[feature_idx] + "']").forEach(function(feature)
+        {
+            var clock = feature.parentNode.parentNode.getAttribute("clock");
+            var values = feature.textContent.split(',');
+            var num_used_values = 0;
+
+            // Push parsed values for the feature
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                value = parseFloat(values[value_idx]);
+                if(!isNaN(value))
+                {
+                    if(isNaN(min_clock))
+                    {
+                        min_clock = clock;
+                    }
+
+                    oracle_data[feature_idx].push(value);
+                    oracle_timestep_lookup.set(cumul_sum + num_used_values, clock);
+                    num_used_values += 1;
+                    max_clock = clock;
+
+                    if(value < generated_y_feature_domains[feature_idx][0])
+                    {
+                        generated_y_feature_domains[feature_idx][0] = value;
+                    }
+                    else if(value > generated_y_feature_domains[feature_idx][1])
+                    {
+                        generated_y_feature_domains[feature_idx][1] = value;
+                    }
+                }
+            }
+
+            timestep_map.get(clock).oracle_data_indices.set(feature_idx, {start: cumul_sum, end: cumul_sum + num_used_values});
+            cumul_sum += num_used_values;
+        });
+
+        oracle_x_scale[feature_idx].domain([0, cumul_sum]);
+        oracle_x_scale[feature_idx].range([min_clock, max_clock]);
+    }
+}
+
+function read_ensemble_data(xml_data)
+{
+    var domains = [[Infinity, -Infinity], [Infinity, -Infinity]];
+
+    // First query timestep, then query for feature.
+    var timesteps = xml_data.querySelectorAll("timestep");
+    for(var timestep_idx = 0; timestep_idx < timesteps.length; timestep_idx++)
+    {
+        ensemble_data.push([]);
+
+        for(var feature_idx = 0; feature_idx < ensemble_names.length; feature_idx++)
+        {
+            ensemble_data[timestep_idx].push([]);
+
+            feature = timesteps[timestep_idx].querySelector("ensemble feature[name='" + ensemble_names[feature_idx] + "']");
+
+            var values = feature.textContent.split(',');
+
+            // Push parsed values for the feature
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                var value = parseFloat(values[value_idx]);
+                ensemble_data[timestep_idx][feature_idx].push(value);
+
+                if(value < domains[feature_idx][0])
+                {
+                    domains[feature_idx][0] = value;
+                }
+                else if(value > domains[feature_idx][1])
+                {
+                    domains[feature_idx][1] = value;
+                }
+            }
+        }
+
+        ensemble_data[timestep_idx] = d3.transpose(ensemble_data[timestep_idx]);
+    }
+
+    ensemble_x_scale.domain(domains[0]);
+    ensemble_y_scale.domain(domains[1]);
+}
+
+function gaussian_pdf(mean, variance, start, stop, num_samples)
+{
+    var pdf_values = [];
+
+    var value = start;
+    var increment = (stop - start) / (num_samples - 1.0);
+    for(var value_idx = 0; value_idx < num_samples; value_idx++)
+    {
+        value = start + (increment * value_idx);
+
+        if(variance == 0)
+        {
+            pdf_values.push(0.0);
+        }
+        else
+        {
+            pdf_values.push((1.0 / Math.sqrt(2.0 * Math.PI * variance)) * Math.exp(-Math.pow(value - mean, 2) / (2.0 * variance)));
+        }
+    }
+
+    return pdf_values;
+}
+
+function read_pdf_data(xml_data)
+{
+    for(var feature_idx = 0; feature_idx < pdf_names.length; feature_idx++)
+    {
+        pdf_x_scales.push(d3.scaleLinear().range([0, width]).domain([0, pdf_num_samples[feature_idx]]));
+        pdf_y_scales.push(d3.scaleLinear().range([height, 0]));
+        pdf_idx_timestep_scale.push(d3.scaleLinear());
+
+        var domain = [Infinity, -Infinity];
+
+        pdf_data.push([]);
+        pdf_mean.push([]);
+        pdf_cov.push([]);
+
+        // First query timestep, then query for feature.
+        var timesteps = xml_data.querySelectorAll("timestep");
+        for(var timestep_idx = 0; timestep_idx < timesteps.length; timestep_idx++)
+        {
+            pdf_data[feature_idx].push([]);
+
+            feature = timesteps[timestep_idx].querySelector("pdf feature[name='" + pdf_names[feature_idx] + "']");
+
+            var values = gaussian_pdf(parseFloat(feature.getAttribute("mean")), parseFloat(feature.getAttribute("cov")), pdf_ranges[feature_idx][0], pdf_ranges[feature_idx][1], pdf_num_samples[feature_idx]);
+
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                pdf_data[feature_idx][timestep_idx].push(values[value_idx]);
+
+                if(values[value_idx] < domain[0])
+                {
+                    domain[0] = values[value_idx];
+                }
+                else if(values[value_idx] > domain[1])
+                {
+                    domain[1] = values[value_idx];
+                }
+            }
+
+            pdf_mean[feature_idx].push(feature.getAttribute("mean"));
+            pdf_cov[feature_idx].push(feature.getAttribute("cov"));
+        }
+
+        pdf_y_scales[feature_idx].domain(domain);
+        pdf_y_scales[feature_idx].domain([0.0, 15.0]);
+
+        pdf_idx_timestep_scale[feature_idx].domain([0, pdf_num_samples[feature_idx]])
+        pdf_idx_timestep_scale[feature_idx].range(pdf_ranges[feature_idx])
+    }
+}
+
+function read_covariance_data(xml_data)
+{
+    // First query timestep, then query for feature.
+    var timesteps = xml_data.querySelectorAll("timestep");
+    for(var timestep_idx = 0; timestep_idx < timesteps.length; timestep_idx++)
+    {
+        factor_data.push([]);
+
+        var global_min_value = Infinity;
+        var global_max_value = -Infinity;
+
+        var allmode_global_min_value = Infinity;
+        var allmode_global_max_value = -Infinity;
+
+        timesteps[timestep_idx].querySelectorAll("covariance outer_cov inner_cov").forEach(function(feature)
+        {
+            var factor = {
+                observed_name: feature.parentNode.getAttribute("name"),
+                generated_name: feature.getAttribute("name"),
+                stride: parseInt(feature.getAttribute("stride")),
+                values: [],
+                min: Infinity,
+                max: -Infinity,
+                mean: 0
+            };
+
+            var values = feature.textContent.split(',');
+            for(var value_idx = 0; value_idx < values.length; value_idx++)
+            {
+                var value = parseFloat(values[value_idx]);
+                // factor.values.push(value);
+                factor.values.push({
+                    observed_name: value_idx % factor.stride,
+                    generated_name: Math.floor(value_idx / factor.stride),
+                    value: value
+                })
+
+                if(feature.getAttribute("same_mode") == "False")
+                {
+                    if(value > global_max_value)
+                    {
+                        global_max_value = value;
+                    }
+                    if(value < global_min_value)
+                    {
+                        global_min_value = value;
+                    }
+                }
+
+                if(value > allmode_global_max_value)
+                {
+                    allmode_global_max_value = value;
+                }
+                if(value < allmode_global_min_value)
+                {
+                    allmode_global_min_value = value;
+                }
+
+                if(value > factor.max)
+                {
+                    factor.max = value;
+                }
+                if(value < factor.min)
+                {
+                    factor.min = value;
+                }
+
+                factor.mean += value;
+            }
+
+            factor.mean /= values.length;
+
+            factor_data[timestep_idx].push(factor);
+        });
+
+        // This triggers in the event that all DoFs are in the same modality.
+        if(global_min_value == Infinity)
+        {
+            global_min_value = allmode_global_min_value;
+        }
+        if(global_max_value == -Infinity)
+        {
+            global_max_value = allmode_global_max_value;
+        }
+
+        factor_domains.push([global_min_value, global_max_value]);
+
+    }
+
+    // Initialize the band scales based on the DoF names
+    factor_x_scales[0].domain(dof_names);
+    factor_y_scales[0].domain(dof_names);
+
+    // Set a default color scale so the SVGs can be built.
+    factor_color_scale.domain([factor_domains[0][0], 0, factor_domains[0][1]]);
+
+    // factor_zoom_factor = (width + margin.top + margin.bottom) / factor_y_scales[0].step();
+    factor_zoom_factor = (width + margin.left + margin.right) / factor_x_scales[0].step();
+}
+
+function create_observed_plots()
+{
+    // Create SVG plots for the observed features
+    for(var observed_idx = 0; observed_idx < observed_indices.length; observed_idx++)
+    {
+        observed_svgs.push(
+            observed_svg.append("svg")
+                .attr("id", "obs_feat_" + observed_idx)
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        );
+
+        observed_domain = d3.extent(observed_data[observed_indices[observed_idx]].concat(oracle_data[observed_indices[observed_idx]]), function(d) { return d;});
+
+        observed_y_scales.push(d3.scaleLinear()
+            .domain(observed_domain)
+            .range([height, 0])); // output
+
+        // 5. d3's line generator
+        var observed_line = d3.line()
+            // .x(function(element, idx, data) { return observed_x_scale(element.clock); }) // set the x values for the line generator
+            .x(function(element, idx, data) {
+                var clock = observed_x_scale(idx);
+                return clock_x_scale(clock);
+            }) // set the x values for the line generator
+            .y(function(element, idx, data) { return observed_y_scales[observed_idx](element); }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        var oracle_line = d3.line()
+            // .x(function(element, idx, data) { return observed_x_scale(element.clock); }) // set the x values for the line generator
+            .x(function(element, idx, data) {
+                var clock = oracle_x_scale[observed_indices[observed_idx]](idx);
+                return clock_x_scale(clock);
+            }) // set the x values for the line generator
+            .y(function(element, idx, data) { return observed_y_scales[observed_idx](element); }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        // 9. Append the path, bind the data, and call the line generator
+        observed_svgs[observed_idx].append("path")
+            .datum(observed_data[observed_indices[observed_idx]]) // 10. Binds data to the line
+            .attr("class", "observed") // Assign a class for styling
+            .attr("d", observed_line); // 11. Calls the line generator
+
+        observed_svgs[observed_idx].append("path")
+            .datum(oracle_data[observed_indices[observed_idx]]) // 10. Binds data to the line
+            .attr("class", "oracle") // Assign a class for styling
+            .attr("d", oracle_line); // 11. Calls the line generator
+
+        // 6. Call the x axis in a group tag
+        observed_svgs[observed_idx].append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height) + ")")
+            .call(d3.axisBottom(clock_x_scale) // Create an axis component with d3.axisBottom
+                .ticks(10)
+                .tickFormat(function(d) { return time_formatter(d - min_oracle_clock); }));
+
+        // 7. Call the y axis in a group tag
+        observed_svgs[observed_idx].append("g")
+            .attr("class", "y axis")
+            .call(d3.axisLeft(observed_y_scales[observed_idx])
+                .ticks(5)
+                .tickFormat(d3.format(".1f"))); // Create an axis component with d3.axisLeft
+
+        // text label for the x axis
+        observed_svgs[observed_idx].append("text")
+            .attr("transform",
+                  "translate(" + (width/2) + " ," +
+                                 (height + margin.top - 10) + ")")
+            .style("text-anchor", "middle")
+            .text("Time (s)");
+
+        // text label for the y axis
+        observed_svgs[observed_idx].append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text(dof_names[observed_indices[observed_idx]]);
+
+        // Add timestep overlay
+        observed_svgs[observed_idx].append("rect")
+            .attr("class", "timestep-overlay")
+            .attr("width", 50)
+            .attr("height", height)
+            .attr("transform", "translate(" + 0.0 + "," + (0.0) + ")")
+            .call(d3.drag()
+                // .on("start", start_drag_overlay)
+                .on("drag", drag_overlay));
+                // .on("end", end_drag_overlay));
+    }
+}
+
+function create_generated_plots()
+{
+    // Create SVG plots for the observed features
+    for(var generated_idx = 0; generated_idx < generated_indices.length; generated_idx++)
+    {
+        generated_svgs.push(
+            generated_svg.append("svg")
+                .attr("id", "gen_feat_" + generated_idx)
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        );
+
+        generated_y_scales.push(d3.scaleLinear()
+            .domain(d3.extent(generated_data[generated_indices[generated_idx]][current_timestep], function(d) { return d;}))
+            .domain(generated_y_feature_domains[generated_indices[generated_idx]])
+            .range([height, 0])); // output
+
+        // generated_y_scales[generated_idx].domain(d3.extent(observed_data[generated_indices[generated_idx]], function(d) { return d;}));
+
+        generated_y_axes.push(d3.axisLeft(generated_y_scales[generated_idx])
+            .ticks(5)
+            .tickFormat(d3.format(".1f")))
+
+        // 7. Call the y axis in a group tag
+        generated_svgs[generated_idx].append("g")
+            .attr("class", "y axis")
+            .call(generated_y_axes[generated_idx]); // Create an axis component with d3.axisLeft
+
+        // 6. Call the x axis in a group tag
+        generated_svgs[generated_idx].append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height) + ")")
+            .call(d3.axisBottom(clock_x_scale) // Create an axis component with d3.axisBottom
+                .ticks(10)
+                .tickFormat(function(d) { return time_formatter(d - min_oracle_clock); }));
+
+        // text label for the x axis
+        generated_svgs[generated_idx].append("text")
+            .attr("transform",
+                  "translate(" + (width/2) + " ," +
+                                 (height + margin.top - 10) + ")")
+            .style("text-anchor", "middle")
+            .text("Time (s)");
+
+        // text label for the y axis
+        generated_svgs[generated_idx].append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text(dof_names[generated_indices[generated_idx]]);
+    }
+}
+
+function create_ensemble_plots()
+{
+    ensemble_svgs = ensemble_svg.append("svg")
+        .attr("id", "ensemble")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", width + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // 7. Call the y axis in a group tag
+    ensemble_svgs.append("g")
+        .attr("class", "y axis")
+        .call(d3.axisLeft(ensemble_y_scale)
+            .ticks(10)
+            .tickFormat(d3.format(".2f"))); // Create an axis component with d3.axisLeft
+
+    // 6. Call the x axis in a group tag
+    ensemble_svgs.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + (width) + ")")
+        .call(d3.axisBottom(ensemble_x_scale) // Create an axis component with d3.axisBottom
+            .ticks(10)
+            .tickFormat(d3.format(".2f")));
+
+    // text label for the x axis
+    ensemble_svgs.append("text")
+        .attr("transform",
+              "translate(" + (width/2) + " ," +
+                             (width + margin.top - 10) + ")")
+        .style("text-anchor", "middle")
+        .text(ensemble_names[0]);
+
+    // text label for the y axis
+    ensemble_svgs.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (width / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text(ensemble_names[1]);
+}
+
+function create_pdf_plots()
+{
+    // Create SVG plots for the observed features
+    for(var pdf_idx = 0; pdf_idx < pdf_names.length; pdf_idx++)
+    {
+        pdf_svgs.push(
+            ensemble_svg.append("svg")
+                .attr("id", "pdf_" + pdf_idx)
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        );
+
+        // 7. Call the y axis in a group tag
+        pdf_svgs[pdf_idx].append("g")
+            .attr("class", "y axis")
+            .call(d3.axisLeft(pdf_y_scales[pdf_idx])
+                .ticks(5)
+                .tickFormat(d3.format(".2f"))); // Create an axis component with d3.axisLeft
+
+        // 6. Call the x axis in a group tag
+        pdf_svgs[pdf_idx].append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height) + ")")
+            .call(d3.axisBottom(pdf_x_scales[pdf_idx]) // Create an axis component with d3.axisBottom
+                .ticks(10)
+                .tickFormat(function(d) { return time_formatter(pdf_idx_timestep_scale[pdf_idx](d)); }));
+
+        // text label for the x axis
+        pdf_svgs[pdf_idx].append("text")
+            .attr("transform",
+                  "translate(" + (width/2) + " ," +
+                                 (height + margin.top - 10) + ")")
+            .style("text-anchor", "middle")
+            .text(pdf_names[pdf_idx]);
+
+        // text label for the y axis
+        pdf_svgs[pdf_idx].append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("PDF");
+
+        pdf_svgs[pdf_idx].append("path")
+            .attr("class", "pdf");
+
+        // Add timestep overlay
+        pdf_svgs[pdf_idx].append("line")
+            .attr("class", "mean-overlay")
+            .attr("transform", "translate(" + 0.0 + "," + (0.0) + ")");
+
+        pdf_svgs[pdf_idx].append("text")
+            .attr("class", "mean-text")
+            .attr("transform",
+                  "translate(" + (0) + " ," +
+                                 (height + margin.top - 10) + ")")
+            .text("Mean:");
+
+        pdf_svgs[pdf_idx].append("text")
+            .attr("class", "cov-text")
+            .attr("transform",
+                  "translate(" + (6 * width / 8) + " ," +
+                                 (height + margin.top - 10) + ")")
+            .text("Cov:");
+    }
+}
+
+function create_factor_plot()
+{
+    // Create factor plot
+    factor_svgs.push(
+        ensemble_svg.append("svg")
+            .attr("id", "factor_plot")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", width + margin.top + margin.bottom)
+            .append("g")
+            //.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    );
+
+
+    // Create factor legend
+    factor_svgs.push(
+        ensemble_svg.append("svg")
+            .attr("id", "factor_legend")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", 50)
+    );
+
+    factor_legend = factor_svgs[1].append("defs")
+      .append("svg:linearGradient")
+      .attr("id", "gradient")
+      .attr("x1", "0%")
+      .attr("y1", "100%")
+      .attr("x2", "100%")
+      .attr("y2", "100%")
+      .attr("spreadMethod", "pad");
+
+    factor_svgs[1].append("rect")
+      .attr("width", width)
+      .attr("height", 20)
+      .style("fill", "url(#gradient)")
+      .attr("transform", "translate(" + margin.left + ",10)");
+
+    var color_scale_y = d3.scaleLinear()
+      .range([width, 0])
+      .domain(factor_domains[0]).nice();
+
+    var color_scale_axis = d3.axisBottom()
+      .scale(color_scale_y)
+      .ticks(5);
+
+    factor_svgs[1].append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + margin.left + ",30)")
+      .call(color_scale_axis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("axis title");
+}
+
+function factor_zoom_transform(d)
+{
+    return d3.zoomIdentity
+        .translate(-factor_x_scales[0](d.observed_name) * factor_zoom_factor, -factor_y_scales[0](d.generated_name) * factor_zoom_factor)
+        .scale(factor_zoom_factor);
+}
+
+function factor_zoomed()
+{
+    factor_svgs[0].attr("transform", d3.event.transform);
+}
+
+function draw_low_factors(d)
+{
+    factor_x_scales[1].range([factor_x_scales[0](d.observed_name), factor_x_scales[0](d.observed_name) + factor_x_scales[0].step()])
+    factor_y_scales[1].range([factor_y_scales[0](d.generated_name), factor_y_scales[0](d.generated_name) + factor_x_scales[0].step()])
+    // factor_x_scales[1].range([factor_x_scales[0](d.observed_name), factor_x_scales[0](d.observed_name) + (width / factor_zoom_factor)])
+    // factor_y_scales[1].range([factor_y_scales[0](d.generated_name), factor_y_scales[0](d.generated_name) + (width / factor_zoom_factor)])
+    factor_x_scales[1].domain([...Array(d.stride).keys()]);
+    factor_y_scales[1].domain([...Array(d.values.length / d.stride).keys()]);
+
+    // console.log(factor_x_scales[1].domain());
+    // console.log(factor_y_scales[1].domain());
+    // console.log(factor_x_scales[1].step());
+    // console.log(factor_y_scales[1].step());
+
+    // TODO: Right now values is a 1-d array.
+    // This makes it difficult to bind the low factor data to since the length dictates the number of rects.
+    // So I will have to remake it as an array of arrays so I can bind effectively.
+    // This means the domain calculated at the start of this function will also have to change.
+    // But then I can bind it and append the rects like normal.
+    // Also in the code to clear the low factors I can just remove these low factor elements.
+    // Will also need to update overlays and borders.
+
+    var selection = factor_svgs[0].selectAll(".low-factor")
+        .data(d.values);
+
+    selection.enter().append("rect")
+        .attr("class", "low-factor")
+        .attr("x", function(d) { return factor_x_scales[1](d.observed_name); })
+        .attr("y", function(d) {  return factor_y_scales[1](d.generated_name); })
+        .attr("width", function(d) { return factor_x_scales[1].step(); })
+        .attr("height", function(d) { return factor_y_scales[1].step(); })
+        .style("fill", function(d)
+        {
+            return factor_color_scale(d.value);
+        })
+        .on("mouseover", function(d) {
+            var text = "";
+            text += "Observed: " + d.observed_name + "<br/>";
+            text += "Generated: " + d.generated_name + "<br/>";
+            text += "Value: " + d.value;
+
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(text)
+                .style("left", (d3.event.pageX - 300) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        })
+        .on("click", function(d)
+        {
+            if(factor_zoomed)
+            {
+                factor_svgs[0].transition()
+                    .duration(1000)
+                    .call(factor_zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top))
+                    .on("start", function() { factor_svgs[0].selectAll(".low-factor").remove(); });
+
+                factor_zoomed = false;
+            }
+        });
+}
+
+function create_navigation_buttons()
+{
+    // Set up navigation buttons
+    d3.select("#backward-nav").on("mousedown", function()
+    {
+        start_nav_backward();
+    }).on("mouseup", function()
+    {
+        stop_nav_backward();
+    });
+
+    d3.select("#forward-nav").on("mousedown", function()
+    {
+        start_nav_forward();
+    }).on("mouseup", function()
+    {
+        stop_nav_forward();
+    });
+}
+
+function start_nav_forward()
+{
+    if(navigation_interval_id != 0)
+    {
+        // Navigation is already currently running. Cancel it first.
+        stop_nav_forward();
+    }
+
+    d3.select("#forward-nav")
+        .attr("class", "navigation active");
+
+    navigate_forward();
+    navigation_interval_id = setInterval(navigate_forward, 250);
+}
+
+function stop_nav_forward()
+{
+    d3.select("#forward-nav")
+        .attr("class", "navigation");
+
+    clearInterval(navigation_interval_id);
+    navigation_interval_id = 0;
+}
+
+function start_nav_backward()
+{
+    if(navigation_interval_id != 0)
+    {
+        // Navigation is already currently running. Cancel it first.
+        stop_nav_backward();
+    }
+
+    d3.select("#backward-nav")
+        .attr("class", "navigation active");
+
+    navigate_backward();
+    navigation_interval_id = setInterval(navigate_backward, 50);
+}
+
+function stop_nav_backward()
+{
+    d3.select("#backward-nav")
+        .attr("class", "navigation");
+
+    clearInterval(navigation_interval_id);
+    navigation_interval_id = 0;
+}
+
+function start_drag_overlay()
+{
+}
+
+function drag_overlay()
+{
+    // Inverse lookup to find what data value is mapped to the mouse position.
+    var clock = clock_x_scale.invert(d3.event.x);
+    var idx = Math.floor(observed_x_scale.invert(clock));
+
+    timestep_map.each(function(value, key, map)
+    {
+        if(value.observed_data_indices.start <= idx && value.observed_data_indices.end > idx)
+        {
+            if(current_timestep != value.index)
+            {
+                var prev_timestep_idx = current_timestep;
+                current_timestep = value.index;
+                set_active_timestep(prev_timestep_idx, current_timestep);
+            }
+        }
+    });
+    // console.log(idx);
+    // console.log(clock);
+    /*if(typeof clock !== "undefined")
+    {
+        // Now we need to know what timestep idx this is.
+        current_timestep = timestep_map.get(clock).index;
+        // d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+        set_active_timestep(current_timestep);
+    }*/
+}
+
+function end_drag_overlay()
+{
+}
+
+function navigate_backward()
+{
+    if(current_timestep > 0)
+    {
+        current_timestep -= 1;
+        set_active_timestep(current_timestep + 1, current_timestep);
+    }
+}
+
+function navigate_forward()
+{
+    if(current_timestep < inference_timesteps.length - 1)
+    {
+        current_timestep += 1;
+        set_active_timestep(current_timestep - 1, current_timestep);
+    }
+}
+
+function set_active_timestep(prev_timestep_idx, timestep_idx)
+{
+    var width = observed_x_scale(inference_timesteps[timestep_idx].end) - observed_x_scale(inference_timesteps[timestep_idx].start);
+
+    var timestep = timestep_map.get(inference_timesteps[timestep_idx]);
+    // Ensure a minimum width of 2
+    var width = clock_x_scale(observed_x_scale(timestep.observed_data_indices.end - 1)) - clock_x_scale(observed_x_scale(timestep.observed_data_indices.start)) + 2;
+
+    if(width < 0)
+    {
+        width = 0;
+    }
+
+    d3.selectAll(".timestep-overlay")
+        .attr("width", width)
+        .attr("transform", "translate(" + clock_x_scale(observed_x_scale(timestep.observed_data_indices.start)) + "," + (0.0) + ")");
+
+    // Set timestep information
+    d3.select("#timestep-info")
+        .text(time_formatter(inference_timesteps[timestep_idx] - observed_timestep_lookup.get(0)) + " (" + timestep_idx + ")");
+
+    draw_generated_data(prev_timestep_idx, timestep_idx);
+    draw_ensemble_data(timestep_idx);
+    draw_pdf_data(timestep_idx);
+    draw_factor_data(timestep_idx);
+}
+
+function draw_generated_data(prev_timestep_idx, timestep_idx)
+{
+    if(use_spt != true)
+    {
+        // Forward navigation
+        if(timestep_idx > prev_timestep_idx || prev_timestep_idx == null)
+        {
+            var current_clock = observed_x_scale(timestep_map.get(inference_timesteps[timestep_idx]).observed_data_indices.end);
+
+            temp_generated_x_scales.push([current_clock, max_oracle_clock]);
+
+            if(temp_generated_x_scales.length > generated_buffer + 1)
+            {
+                temp_generated_x_scales.shift();
+            }
+        }
+        // Backward navigation
+        else
+        {
+            if(timestep_idx - generated_buffer >= 0)
+            {
+                var current_clock = observed_x_scale(timestep_map.get(inference_timesteps[timestep_idx - generated_buffer]).observed_data_indices.end);
+
+                temp_generated_x_scales.unshift([current_clock, max_oracle_clock]);
+            }
+            temp_generated_x_scales.pop();
+        }
+    }
+
+    for(var generated_idx = 0; generated_idx < generated_indices.length; generated_idx++)
+    {
+        var observed_line = d3.line()
+            // .x(function(element, idx, data) { return observed_x_scale(element.clock); }) // set the x values for the line generator
+            .x(function(element, idx, data) {
+                var clock = observed_x_scale(idx);
+                return clock_x_scale(clock);
+            }) // set the x values for the line generator
+            .y(function(element, idx, data) { return generated_y_scales[generated_idx](element); }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        // How do we dictate x value positions? It's through the generate x_scale, ok.
+        // 5. d3's line generator
+        var generated_line = d3.line()
+            // .x(function(element, idx, data) { return observed_x_scale(element.clock); }) // set the x values for the line generator
+            .x(function(element, idx, data)
+            {
+                // Get the sample starting point based on the length of the current data trajectory (it's proportional to the phase estimate).
+                // var starting_point = generated_length - data.length;
+                // if(use_spt == true && spt_phase == "current")
+                // {
+                //     starting_point = 0;
+                // }
+                var starting_point = 0;
+                // Convert this to a clock value
+                var clock = generated_x_scale(starting_point + idx);
+                return clock_x_scale(clock);
+            }) // set the x values for the line generator
+            .y(function(element, idx, data) { return generated_y_scales[generated_idx](element); }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        var oracle_line = d3.line()
+            // .x(function(element, idx, data) { return observed_x_scale(element.clock); }) // set the x values for the line generator
+            .x(function(element, idx, data)
+            {
+                var clock = oracle_x_scale[generated_indices[generated_idx]](idx);
+                return clock_x_scale(clock);
+            }) // set the x values for the line generator
+            .y(function(element, idx, data) { return generated_y_scales[generated_idx](element); }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        // generated_svgs[generated_idx].select("path")
+        //     .datum(generated_data[generated_idx][timestep_idx]) // 10. Binds data to the line
+        //     .attr("class", "generated") // Assign a class for styling
+        //     .attr("d", generated_line); // 11. Calls the line generator
+
+        var generated_selection = {};
+
+        if(use_spt == true && spt_phase == "current")
+        {
+            var data = [];
+            if(timestep_idx == 0)
+            {
+                data = generated_data[generated_indices[generated_idx]][0];
+                generated_x_scale.domain([0, generated_length - 1]);
+            }
+            else
+            {
+                for(var temp_idx = 1; temp_idx <= timestep_idx; temp_idx++)
+                {
+                    data = data.concat(generated_data[generated_indices[generated_idx]][temp_idx]);
+                }
+                generated_x_scale.domain([0, inference_timesteps.length]);
+            }
+            generated_selection = generated_svgs[generated_idx].selectAll(".generated")
+                .data([data]);
+        }
+        else
+        {
+            generated_x_scale.domain([0, generated_data[generated_indices[generated_idx]][timestep_idx].length]);
+            var timestep_idx_buffer = timestep_idx - generated_buffer;
+            if(timestep_idx_buffer < 0)
+            {
+                timestep_idx_buffer = 0;
+            }
+            // Select all existing paths and bind them to the slice of data including the current and previous 9 generated trajectories.
+            generated_selection = generated_svgs[generated_idx].selectAll(".generated")
+                .data(generated_data[generated_indices[generated_idx]].slice(timestep_idx_buffer, timestep_idx + 1));
+        }
+
+        //console.log(generated_data[generated_indices[generated_idx]].slice(timestep_idx_buffer, timestep_idx + 1));
+
+        // Update the old trajectories to an old visualization style.
+        // Keep the latest one as the "current" style.
+        generated_selection.transition()
+            .duration(50)
+            .attr("class", function(d, i, n) {
+                //if(n.length == 10 && i == 9)
+                if(i == n.length - 1)
+                {
+                    return "generated";
+                }
+                return "generated old";
+            })
+            .attr("d", function(d, i, n) {
+                if(use_spt == true && spt_phase == "current")
+                {
+                    if(timestep_idx == 0)
+                    {
+                        generated_x_scale.domain([0, generated_length - 1]);
+                    }
+                    else
+                    {
+                        generated_x_scale.domain([0, inference_timesteps.length]);
+                    }
+                }
+                else
+                {
+                    generated_x_scale.domain([0, d.length]);
+                }
+
+                if(use_spt != true)
+                {
+                    // Set the appropriate timestep scale based on what buffered trajectory this is.
+                    generated_x_scale.range(temp_generated_x_scales[i]);
+                }
+
+                return generated_line(d);
+            });
+
+        // Remove any trajectories that are not part of the current data slice. For example, if we went backwards through time and no longer have 10 to display.
+        generated_selection.exit().remove();
+
+        if(use_spt != true)
+        {
+            // Set the appropriate timestep scale for the newly generated line.
+            generated_x_scale.range(temp_generated_x_scales[timestep_idx - timestep_idx_buffer]);
+        }
+
+        // Add trajectories that are not part of the current data slice. For example, if we move forward through time and have more to display than before.
+        // Make sure to merge with the existing selection.
+        generated_selection.enter().append("path")
+            .attr("class", "generated")
+            .attr("d", generated_line)
+            .merge(generated_selection);
+
+        // generated_svgs[generated_idx].append("path")
+        //     .datum(generated_data[generated_idx][timestep_idx])
+        //     .attr("class", "generated")
+        //     .attr("d", generated_line);
+
+        if(observed_data[generated_indices[generated_idx]].length > 0)
+        {
+            // Calculate index of observed data to display.
+            var last_observed_idx = timestep_map.get(inference_timesteps[timestep_idx]).observed_data_indices.end
+
+            // Observed and oracle data is much simpler by comparison. No removing/merging necessary as only 1 path is displayed and updated.
+            var observed_selection = generated_svgs[generated_idx].selectAll(".observed")
+                .data([observed_data[generated_indices[generated_idx]].slice(0, last_observed_idx)]);
+
+            observed_selection.transition()
+                .duration(50)
+                .attr("d", observed_line);
+
+            // observed_selection.exit().remove();
+
+            observed_selection.enter().append("path")
+                .attr("class", "observed")
+                .attr("d", observed_line);
+                // .merge(observed_selection);
+        }
+
+        if(oracle_data[generated_indices[generated_idx]].length > 0)
+        {
+            var last_oracle_idx = timestep_map.get(inference_timesteps[timestep_idx]).oracle_data_indices.get(generated_indices[generated_idx]).end;
+
+            // Observed and oracle data is much simpler by comparison. No removing/merging necessary as only 1 path is displayed and updated.
+            var oracle_selection = generated_svgs[generated_idx].selectAll(".oracle")
+                .data([oracle_data[generated_indices[generated_idx]].slice(0, last_oracle_idx)]);
+
+            oracle_selection.transition()
+                .duration(50)
+                .attr("d", oracle_line);
+
+            // oracle_selection.exit().remove();
+
+            oracle_selection.enter().append("path")
+                .attr("class", "oracle")
+                .attr("d", oracle_line);
+                // .merge(oracle_selection);
+        }
+    }
+}
+
+function draw_ensemble_data(timestep_idx)
+{
+    var selection = ensemble_svgs.selectAll(".dot")
+        .data(ensemble_data[timestep_idx]);
+
+    selection.transition()
+        .duration(50)
+        .attr("cx", function(d) { return ensemble_x_scale(d[0]); })
+        .attr("cy", function(d) { return ensemble_y_scale(d[1]); });
+
+    selection.enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return ensemble_x_scale(d[0]); })
+        .attr("cy", function(d) { return ensemble_y_scale(d[1]); });
+}
+
+function draw_pdf_data(timestep_idx)
+{
+    for(var pdf_idx = 0; pdf_idx < pdf_names.length; pdf_idx++)
+    {
+        // console.log(pdf_data[pdf_idx][timestep_idx]);
+
+        var pdf_line = d3.line()
+            .x(function(element, idx, data) { return pdf_x_scales[pdf_idx](idx); }) // set the x values for the line generator
+            .y(function(element, idx, data) { if(idx == 0 || idx == pdf_num_samples[pdf_idx] - 1) { return pdf_y_scales[pdf_idx](0.0); } else { return pdf_y_scales[pdf_idx](element); } }) // set the y values for the line generator
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+        var pdf_selection = pdf_svgs[pdf_idx].selectAll(".pdf")
+            .data([pdf_data[pdf_idx][timestep_idx]]);
+
+        // Update the old trajectories to an old visualization style.
+        // Keep the latest one as the "current" style.
+        pdf_selection.transition()
+            .duration(50)
+            .attr("class", "pdf")
+            .attr("d", pdf_line);
+
+        // Remove any trajectories that are not part of the current data slice. For example, if we went backwards through time and no longer have 10 to display.
+        pdf_selection.exit().remove();
+
+        // Add trajectories that are not part of the current data slice. For example, if we move forward through time and have more to display than before.
+        // Make sure to merge with the existing selection.
+        pdf_selection.enter().append("path")
+            .attr("class", "pdf")
+            .attr("d", pdf_line)
+            .merge(pdf_selection);
+
+            // console.log(pdf_x_scales[pdf_idx](pdf_mean[pdf_idx][timestep_idx]));
+            // console.log(pdf_mean[pdf_idx][timestep_idx]);
+
+        var sample_idx = pdf_idx_timestep_scale[pdf_idx].invert(pdf_mean[pdf_idx][timestep_idx]);
+        pdf_svgs[pdf_idx].select(".mean-overlay")
+            .attr("x1", pdf_x_scales[pdf_idx](sample_idx))
+            .attr("y1", pdf_y_scales[pdf_idx].range()[1])
+            .attr("x2", pdf_x_scales[pdf_idx](sample_idx))
+            .attr("y2", pdf_y_scales[pdf_idx].range()[0])
+
+        pdf_svgs[pdf_idx].select(".mean-text")
+            .text("Mean: " + small_num_formatter(pdf_mean[pdf_idx][timestep_idx]));
+
+        pdf_svgs[pdf_idx].select(".cov-text")
+            .text("Var: " + small_num_formatter(pdf_cov[pdf_idx][timestep_idx]));
+    }
+}
+
+function draw_factor_data(timestep_idx)
+{
+    if(factor_data[timestep_idx].length == 0)
+    {
+        return 0;
+    }
+
+    // factor_color_scale.domain(factor_domains[timestep_idx]);
+    factor_color_scale.domain([factor_domains[timestep_idx][0], 0, factor_domains[timestep_idx][1]]);
+
+    // Remove old stops.
+    factor_legend.selectAll("stop").remove();
+    // Draw new ones to update the gradient.
+    var stops = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+
+    for(var stop_idx = 0; stop_idx < stops.length; stop_idx++)
+    {
+        value = factor_domains[timestep_idx][1] - ((factor_domains[timestep_idx][1] - factor_domains[timestep_idx][0]) * stops[stop_idx]);
+
+        console.log(factor_domains);
+        if(isNaN(value))
+        {
+            return 0;
+        }
+
+        factor_legend.append("stop")
+          .attr("offset", (stops[stop_idx] * 100.0).toString() + "%")
+          .attr("stop-color", factor_color_scale(value).toString())
+          .attr("stop-opacity", 1);
+    }
+
+    var color_scale_y = d3.scaleLinear()
+      .range([0, width])
+      .domain(factor_domains[timestep_idx]).nice();
+
+    var color_scale_axis = d3.axisBottom()
+      .scale(color_scale_y)
+      .ticks(5);
+
+    factor_svgs[1].select("g").call(color_scale_axis);
+
+    // We need to set the transform with the zoom method to correctly populate the inital transformation state.
+    // Otherwise subsequent zooms will start from identity rather than this initial transform.
+    factor_svgs[0].call(factor_zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top));
+
+    var selection = factor_svgs[0].selectAll(".high-factor")
+        .data(factor_data[timestep_idx]);
+
+    // Update the old trajectories to an old visualization style.
+    // Keep the latest one as the "current" style.
+    selection.transition()
+        .duration(50)
+        .style("fill", function(d)
+        {
+            if(Math.abs(d.max) > Math.abs(d.min))
+            {
+                return factor_color_scale(d.max);
+            }
+            return factor_color_scale(d.min);
+            //return factor_color_scale(d.mean);
+        })
+
+    // Remove any trajectories that are not part of the current data slice. For example, if we went backwards through time and no longer have 10 to display.
+    selection.exit().remove();
+
+    // Add trajectories that are not part of the current data slice. For example, if we move forward through time and have more to display than before.
+    // Make sure to merge with the existing selection.
+    selection.enter().append("rect")
+        .attr("class", "high-factor")
+        .attr("x", function(d) { return factor_x_scales[0](d.observed_name); })
+        .attr("y", function(d) { return factor_y_scales[0](d.generated_name); })
+        .attr("width", function(d) { return factor_x_scales[0].step(); })
+        .attr("height", function(d) { return factor_y_scales[0].step(); })
+        .style("fill", function(d)
+        {
+            if(Math.abs(d.max) > Math.abs(d.min))
+            {
+                return factor_color_scale(d.max);
+            }
+            return factor_color_scale(d.min);
+            //return factor_color_scale(d.mean);
+        })
+        .on("mouseover", function(d) {
+            var text = "";
+            text += "Observed: " + d.observed_name + "<br/>";
+            text += "Generated: " + d.generated_name + "<br/>";
+            text += "Value: ";
+
+            if(Math.abs(d.max) > Math.abs(d.min))
+            {
+                text += d.max;
+            }
+            else
+            {
+                text += d.min;
+            }
+
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(text)
+                .style("left", (d3.event.pageX - 300) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        })
+        .on("click", function(d)
+        {
+            if(!factor_zoomed)
+            {
+                factor_svgs[0].transition()
+                    .duration(1000)
+                    .call(factor_zoom.transform, factor_zoom_transform(d))
+                    .on("end", function() { draw_low_factors(d); });
+
+                factor_zoomed = true;
+            }
+            else
+            {
+                factor_svgs[0].transition()
+                    .duration(1000)
+                    .call(factor_zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top))
+                    .on("start", function() { factor_svgs[0].selectAll(".low-factor").remove(); });
+
+                factor_zoomed = false;
+            }
+        });
+}
+
+</script>

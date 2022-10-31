@@ -12,7 +12,9 @@ import irl_control
 import yaml
 from transforms3d.affines import compose
 from typing import Dict
-from irl_control.device import Device, DeviceState
+import calendar
+import time
+from hashids import Hashids
 
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
 DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
@@ -71,6 +73,17 @@ class ControlBase(MujocoApp):
         self.action_map = self.get_action_map()
         self.DEFAULT_PARAMS: Dict[Action, Dict] = dict([(action, self.get_default_action_ctrl_params(action)) for action in Action])
         self.gripper_force = 0.00
+        self.recording = []
+        self.record = False
+        self.hashids = Hashids()
+    
+    def set_record(self, val):
+        self.record = val
+        if val == False and len(self.recording) > 0:
+            fn = os.path.join("./data/BIP/", self.hashids.encode(calendar.timegm(time.gmtime())) + ".csv")
+            np.savetxt(fn, self.recording, delimiter=', ')
+            self.recording = []
+            print("Recording saved as:", fn)
 
     def grip(self, params):
         """
@@ -102,7 +115,8 @@ class ControlBase(MujocoApp):
                 'max_error' : 0.0018,
                 'gripper_force' : 0.0,
                 'min_speed_xyz' : 0.1,
-                'max_speed_xyz' : 3.0
+                'max_speed_xyz' : 3.0,
+                'noise': [0.0, 0.0]
             }
         # Grip action defaults
         elif action == Action.GRIP:
@@ -147,19 +161,25 @@ class ControlBase(MujocoApp):
         using the parameters specified by the action.
         """
         assert params['action'] == 'WP'
-        # Se the targets (class member variables) 
-        self.set_waypoint_targets(params)
         # Apply default parameter values to those that are unspecified
         self.update_action_ctrl_params(params, Action.WP)
+        # Se the targets (class member variables) 
+        self.set_waypoint_targets(params)
         # Iterate the controller until the desired level of error is achieved
         step = 0
         while not self.is_done(params["max_error"], step):
             step += 1
             # Limit the max velocity of the robot according to the given params
-            for device_name in self.errors.keys():
-                self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
+            # for device_name in self.errors.keys():
+            #     self.robot.get_device(device_name).max_vel[0] = max(params['min_speed_xyz'], min(params['max_speed_xyz'], params['kp']*self.errors[device_name]))
             ctrlr_output = self.controller.generate(self.targets)
             self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
+    
+    def fix_rot(self, rot):
+        rot = np.asarray(rot)
+        if rot[0] < 0:
+            rot *= -1.0
+        return rot.tolist()
 
     def send_forces(self, forces, gripper_force:float=None, update_errors:bool=True, render:bool=True):
         """
@@ -181,12 +201,26 @@ class ControlBase(MujocoApp):
             self.sim.step()
             self.viewer.render()
         
+        if self.record:
+            feedback = self.robot.getState()
+            self.recording.append(self.get_clean_state(feedback))
+        
         # Update the errors for every device
         if update_errors:
             for device_name in self.targets.keys():
                 # Calculate the euclidean norm between target and current to obtain error
                 self.errors[device_name] = np.linalg.norm(
                     self.controller.calc_error(self.targets[device_name], self.robot.get_device(device_name)))
+
+    def get_clean_state(self, state):
+        #TODO: This needs a smarter selector
+        return np.concatenate(( 
+                state["q_base"], state["q_ur5left"][2:], state["q_ur5right"][2:], # 0-1, 2-7, 8-13
+                # state["dq_base"], state["dq_ur5left"][2:], state["dq_ur5right"][2:], 
+                state["force_ur5left"], state["torque_ur5left"], state["force_ur5right"], state["torque_ur5right"], # 14-16, 17-19, 20-22, 23-25
+                state["ee_xyz_ur5left"], state["ee_xyz_ur5right"], # 26-28, 29-31
+                self.fix_rot(state["ee_quat_ur5left"]), self.fix_rot(state["ee_quat_ur5right"]) # 32-35, 36-39
+        ))
 
     def update_action_ctrl_params(self, params, action: Action):
         """
@@ -225,11 +259,11 @@ class ControlBase(MujocoApp):
                 # Parse the action parameter for the target xyz location
                 target_obj = self.apply_keys(self.action_objects, params['target_xyz'])
                 for d, t in zip(self.targets.keys(), target_obj):
-                    self.targets[d].xyz = t
+                    self.targets[d].xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
             elif isinstance(params['target_xyz'], list):
                 # target = params['target_xyz'] + offset
                 for d, t in zip(self.targets.keys(), params["target_xyz"]):
-                    self.targets[d].xyz = t
+                    self.targets[d].xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
             else:
                 print("Invalid type for target_xyz!")
                 raise ValueError

@@ -42,6 +42,7 @@ iros2022_pickup_sequence:
         target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Pre-Grasp
         max_error: 0.04
+        # noise: [0.0, 0.0025]
     # Open gripper for 1 second
     -   action: GRIP
         gripper_force: 0.05
@@ -58,27 +59,34 @@ iros2022_pickup_sequence:
         target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Lift-Object
         max_error: 0.08
+        noise: [0.0, 0.005]
 
 iros2022_demo_sequence:
     # Hover above the female object
     -   action: INTERP
-        target_xyz: [[0,0,0], [-0.215, 0.6, 0.3], [0.285, 0.6, 0.3]]
+        target_xyz: [[0,0,0], [-0.215, 0.61, 0.3], [0.285, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Transfer
         max_error: 0.2
         steps: 100
+        noise: [0.0, 0.001]
     # Make sure the last waypoint is reacht closely
     -   action: WP
-        target_xyz: [[0,0,0], [-0.215, 0.6, 0.3], [0.285, 0.6, 0.3]]
+        target_xyz: [[0,0,0], [-0.215, 0.61, 0.3], [0.285, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Pre-Insert-Hover
-        max_error: 0.05
+        max_error: 0.04
+        noise: [0.0, 0.001]
     # Insert
-    -   action: WP
-        target_xyz: [[0,0,0], [-0.215, 0.6, 0.24], [0.285, 0.6, 0.24]]
+    -   action: INTERP
+        target_xyz: [[0,0,0], [-0.215, 0.61, 0.23], [0.285, 0.59, 0.23]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Insertion
         max_error: 0.05
+        steps: 20
+        noise: [0.0, 0.001]
+
+iros2022_release_sequence:
     # Open gripper for 1 second
     -   action: GRIP
         gripper_force: -0.1
@@ -89,4 +97,4 @@ iros2022_demo_sequence:
         target_xyz: [[0,0,0], [-0.2, 0.6, 0.3], [0.3, 0.6, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Dummy
-        max_error: 0.000001
+        max_error: 0.05

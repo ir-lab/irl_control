@@ -52,8 +52,13 @@ class CollectData(ControlBase):
         self.initialize_action_objects()
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
 
+        self.set_record(True)
+
         self.run_sequence(self.action_config['iros2022_demo_sequence'])
-        
+
+        self.set_record(False)
+
+        self.run_sequence(self.action_config['iros2022_release_sequence'])
 
 
  
