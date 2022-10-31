@@ -77,7 +77,7 @@ class AdmitTest(MujocoApp):
             #Apply external force on left end effector
             self.sim.data.xfrc_applied[38] = [0,0,0,0,0,0]
             if count > 3000 and count < 5000:
-                self.sim.data.xfrc_applied[38] = [20,0,0,0,0,0]   
+                self.sim.data.xfrc_applied[38] = [0,0,20,0,0,0]   
             self.sim.step()
             self.viewer.render()
             functions.mj_inverse(self.model,self.sim.data)
