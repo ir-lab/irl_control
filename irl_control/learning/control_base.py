@@ -1,7 +1,5 @@
-from mujoco_py import GlfwContext
 from mujoco_py.mjviewer import MjViewer
 import numpy as np
-from typing import Tuple
 import threading
 from irl_control import MujocoApp, OSC
 from irl_control.device import DeviceState
@@ -20,6 +18,10 @@ from hashids import Hashids
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
 DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
 
+# Specify the index of the gripper actuators in the dual_ur5.xml file
+GRIP_IDX_RIGHT = 7
+GRIP_IDX_LEFT = 14
+
 class Action(Enum):
     """
     Action Enums are used to force the action sequence instructions (strings)
@@ -29,12 +31,7 @@ class Action(Enum):
     GRIP = 1
     INTERP = 2
 
-"""
-The purpose of this example is to test out the robot configuration
-to see how well the gains perform on stabilizing the base and the
-arm that does move rapidly. One of the arms in this demo will move
-wildly to test out this stabilization capability.
-"""
+
 class ControlBase(MujocoApp):
     """
     Implements the OSC and Dual UR5 robot
@@ -47,25 +44,17 @@ class ControlBase(MujocoApp):
         
         # Specify the controller configuations that should be used for
         # the corresponding devices
-
         osc_device_configs = []
-        self.targets = {}
-        self.errors = {}
-
-        for device, controller in zip(device_config["devices"], device_config["controllers"]):
-            osc_device_configs.append((device, self.get_controller_config(controller)))
-            self.targets[device] = Target()
-            self.errors[device] = np.inf
+        self.targets: Dict[str, Target] = {}
+        self.device_names = []
+        for device_name, controller in zip(device_config["devices"], device_config["controllers"]):
+            osc_device_configs.append((device_name, self.get_controller_config(controller)))
+            self.targets[device_name] = Target()
+            self.device_names.append(device_name)
 
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance = True)
-
-        # Start collecting device states from simulator
-        # NOTE: This is necessary when you are using OSC, as it assumes
-        #       that the robot.start() thread is running.
-        # self.robot_data_thread = threading.Thread(target=self.robot.start)
-        # self.robot_data_thread.start()
 
         # Keep track of device target errors
         self.viewer = MjViewer(self.sim)
@@ -102,7 +91,10 @@ class ControlBase(MujocoApp):
         # Apply gripper forces for duration specified
         while self.timer_running:
             ctrlr_output = self.controller.generate(self.targets)
-            self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
+            self.send_forces(ctrlr_output, gripper_force=self.gripper_force)
+            self.sim.step()
+            self.viewer.render()
+            self.maybe_record_states()
 
     def get_default_action_ctrl_params(self, action):
         """
@@ -138,18 +130,25 @@ class ControlBase(MujocoApp):
         # Based on steps
         if step < 25:
             return False
-        # Based on velocity
+        
+        # Based on DQ Error
         vel = []
-        for device_name in self.errors.keys():
+        for device_name in self.device_names:
             vel += self.robot.get_device(device_name).get_state(DeviceState.DQ).tolist()
         vel = np.asarray(vel)
         if np.all(np.isclose(np.zeros_like(vel), vel, rtol=max_error, atol=max_error)):
             return True
         return False
 
-        # Based on error:
+        # Based on L2 error:
+        # errors = []
+        # for device_name in self.errors.keys():
+        #     # Calculate the euclidean norm between target and current to obtain error
+        #     error = np.linalg.norm(
+        #         self.controller.calc_error(self.targets[device_name], self.robot.get_device(device_name)))
+        #     errors.append(error)
         # done = True
-        # for _, err in self.errors.items():
+        # for err in errors:
         #     if err > max_error:
         #         print(err)
         #         done = False
@@ -171,15 +170,29 @@ class ControlBase(MujocoApp):
         while not self.is_done(params["max_error"], step):
             step += 1
             ctrlr_output = self.controller.generate(self.targets)
-            self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
-    
+            self.send_forces(ctrlr_output, gripper_force=self.gripper_force)
+            self.sim.step()
+            self.viewer.render()
+            self.maybe_record_states()
+
     def fix_rot(self, rot):
         rot = np.asarray(rot)
         if rot[0] < 0:
             rot *= -1.0
         return rot.tolist()
+    
+    def maybe_record_states(self, verbose=False):
+        """
+        Optionally record states if self.record is set to True
+        """
+        if self.record:
+            feedback = self.robot.get_device_states()
+            self.recording.append(self.get_clean_state(feedback))
+        else:
+            if verbose:
+                print("[ record_states() ]: Record is set to False: Not recording!")
 
-    def send_forces(self, forces, gripper_force:float=None, update_errors:bool=True, render:bool=True):
+    def send_forces(self, forces, gripper_force:float=None):
         """
         This function sends forces to the robot, using the values supplied.
         Optionally, you can render the scene and update errors of the devices,
@@ -189,34 +202,35 @@ class ControlBase(MujocoApp):
         # Apply forces to the main robot
         for force_idx, force  in zip(*forces):
             self.sim.data.ctrl[force_idx] = force
+        
         # Apply gripper force to the active arm
         if gripper_force:
-            for idx in [7,14]:
+            for idx in [GRIP_IDX_RIGHT, GRIP_IDX_LEFT]:
                 self.sim.data.ctrl[idx] = gripper_force
         
-        # Render the sim (optionally)
-        if render:
-            self.sim.step()
-            self.viewer.render()
-        
-        if self.record:
-            feedback = self.robot.get_device_states()
-            self.recording.append(self.get_clean_state(feedback))
-        
-        # Update the errors for every device
-        if update_errors:
-            for device_name in self.targets.keys():
-                # Calculate the euclidean norm between target and current to obtain error
-                self.errors[device_name] = np.linalg.norm(
-                    self.controller.calc_error(self.targets[device_name], self.robot.get_device(device_name)))
-
     def get_clean_state(self, state):
-        #TODO: This needs a smarter selector
+        """
+        Here, we manually assign the state variables for the columns of the CSV
+        The indices for each state variable are commented on the right hand side
+        NOTE: BIP will use these indices to denote the predicted DOFs, 
+              so if the state changes, then BIP's indices must also be updated
+        """
         return np.concatenate(( 
-                state['base'][DeviceState.Q_ACTUATED], state['ur5left'][DeviceState.Q_ACTUATED], state['ur5right'][DeviceState.Q_ACTUATED], # 0-1, 2-7, 8-13
-                state['ur5left'][DeviceState.FORCE], state['ur5left'][DeviceState.TORQUE], state['ur5right'][DeviceState.FORCE], state['ur5right'][DeviceState.TORQUE], # 14-16, 17-19, 20-22, 23-25
-                state['ur5left'][DeviceState.EE_XYZ], state['ur5right'][DeviceState.EE_XYZ], # 26-28, 29-31
-                self.fix_rot(state['ur5left'][DeviceState.EE_QUAT]), self.fix_rot(state['ur5right'][DeviceState.EE_QUAT]) # 32-35, 36-39
+                state['base'][DeviceState.Q_ACTUATED],                  # 0-1
+                state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
+                state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
+                
+                state['ur5left'][DeviceState.FORCE],                    # 14-16
+                state['ur5left'][DeviceState.TORQUE],                   # 17-19
+                
+                state['ur5right'][DeviceState.FORCE],                   # 20-22
+                state['ur5right'][DeviceState.TORQUE],                  # 23-25
+                
+                state['ur5left'][DeviceState.EE_XYZ],                   # 26-28
+                state['ur5right'][DeviceState.EE_XYZ],                  # 29-31
+                
+                self.fix_rot(state['ur5left'][DeviceState.EE_QUAT]),    # 32-35
+                self.fix_rot(state['ur5right'][DeviceState.EE_QUAT])    # 36-39
         ))
 
     def update_action_ctrl_params(self, params, action: Action):
@@ -227,6 +241,9 @@ class ControlBase(MujocoApp):
             params[key] = params[key] if key in params.keys() else default_val
     
     def apply_keys(self, d, keys):
+        """
+        Parse the yaml entry's value of the form x.y.z
+        """
         temp = d
         for key in keys.split("."):
             temp = temp[key]
@@ -237,17 +254,8 @@ class ControlBase(MujocoApp):
         Set the targets for the robot devices (arms) based on the values 
         specified in the action sequence.
         """
-        # # Set targets for passive arm
-        # self.targets[self.passive_arm.name].xyz = self.passive_arm.get_state('ee_xyz')
-        # self.targets[self.passive_arm.name].abg = DEFAULT_EE_ORIENTATION
-        
-        # Set targets for active arm
+        # Set target position(s)
         if 'target_xyz' in params.keys():
-            # NOTE: offset can be a string (instead of a list). This string must be the name of an
-            # attribute of the action object specified by 'target_xyz' (and the attribute value must be 
-            # a list with 3 entries)
-            offset = params['offset'] if 'offset' in params.keys() else [0.0, 0.0, 0.0]
-            
             # NOTE: target_xyz can be a string (instead of a list); there are 2 possibilites
             # 1) 'starting_pos': Must be set in python before running the WP Action
             # 2) '<action_object_name>': a string which must an action object, where the coordinates
@@ -256,21 +264,20 @@ class ControlBase(MujocoApp):
                 # Parse the action parameter for the target xyz location
                 target_obj = self.apply_keys(self.action_objects, params['target_xyz'])
                 for d, t in zip(self.targets.keys(), target_obj):
-                    self.targets[d].xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
+                    target_xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
+                    self.targets[d].set_xyz(target_xyz)
             elif isinstance(params['target_xyz'], list):
-                # target = params['target_xyz'] + offset
                 for d, t in zip(self.targets.keys(), params["target_xyz"]):
-                    self.targets[d].xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
+                    target_xyz = (np.asarray(t) + np.random.normal(params['noise'][0], params['noise'][1], size=np.asarray(t).shape)).tolist()
+                    self.targets[d].set_xyz(target_xyz)
             else:
                 print("Invalid type for target_xyz!")
                 raise ValueError
-            # TODO: Make this a "set all deal"
-            # self.targets['ur5right'].xyz = target
         else:
             print("No Target Specified for Waypoint!")
             raise KeyError('target_xyz')
         
-        # Set the target orientations for the arm
+        # Set target orientation(s)
         if 'target_abg' in params.keys():
             if isinstance(params['target_abg'], str):
                 # Apply the necessary yaw offet to the end effector
@@ -284,20 +291,19 @@ class ControlBase(MujocoApp):
                 tfmat = np.matmul(tfmat_obj, tfmat_grip)
                 # Extract the end effector yaw from the final rotation matrix output
                 target_abg = np.array(mat2euler(tfmat[:3, :3], 'rxyz'))
-            elif isinstance(params['target_xyz'], list):
+            elif isinstance(params['target_abg'], list):
                 target_abg = np.deg2rad(params['target_abg'])
             else:
-                print("Invalid type for target_xyz!")
+                print("Invalid type for target_abg!")
                 raise ValueError
-            #TODO: General set
-            self.targets["ur5right"].abg = target_abg
+            self.targets["ur5right"].set_abg(target_abg)
         else:
-            self.targets["ur5right"].abg = DEFAULT_EE_ORIENTATION
+            self.targets["ur5right"].set_abg(DEFAULT_EE_ORIENTATION)
         
         # Set the target orientations for the arm
         if 'target_quat' in params.keys():
             for d, t in zip(self.targets.keys(), params["target_quat"]):
-                self.targets[d].setQuat(*t)
+                self.targets[d].set_quat(t)
 
     def get_action_map(self):
         """
@@ -320,7 +326,7 @@ class ControlBase(MujocoApp):
         # Figure out where we currently are
         current_pos = []
         current_rot = []
-        for device_name in self.errors.keys():
+        for device_name in self.device_names:
             current_pos.append(self.robot.get_device(device_name).get_state(DeviceState.EE_XYZ))
             rot = np.asarray(self.robot.get_device(device_name).get_state(DeviceState.EE_QUAT))
             if rot[0] < 0:
@@ -342,17 +348,16 @@ class ControlBase(MujocoApp):
         rot_wps = self.interpolate_dof(rot_wps)
 
         # Create parameters for waypoint
+        print("Interpolating waypoints...")
         for i in range(steps):
             wp_params = params.copy()
             wp_params["action"] = "WP"
             wp_params["target_xyz"] = pos_wps[i].tolist()
             wp_params["target_quat"] = rot_wps[i].tolist()
             wp_params["name"] = params["name"] + "_Step_" + str(i)
-            print("Interpolated Waypoint", i)
-            for key in self.errors.keys():
-                self.errors[key] = np.inf
+            if (i + 1) % 10 == 0:
+                print("Interpolated Waypoint", i + 1)
             self.go_to_waypoint(wp_params)
-
 
     def get_action_config(self, config_file: str):
         """
@@ -399,8 +404,6 @@ class ControlBase(MujocoApp):
         for action_entry in action_sequence:
             if "name" in action_entry.keys():
                 print("Starting Action", action_entry["name"])
-            for key in self.errors.keys():
-                self.errors[key] = np.inf
             action = self.string2action(action_entry['action'])
             action_func = self.action_map[action]
             action_func(action_entry)

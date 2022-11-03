@@ -56,7 +56,7 @@ class CollectData(ControlBase):
         self.initialize_action_objects()
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
 
-        targets = {}
+        targets: Dict[str, Target] = {}
         targets['base'] = Target()
         targets['ur5left'] = Target()
         targets['ur5right'] = Target()
@@ -66,30 +66,24 @@ class CollectData(ControlBase):
         while not intprim.is_done():
             state = self.get_clean_state(self.robot.get_device_states())
             phase, prediction = intprim.update_stream(state)
+            prediction = np.asarray(prediction)
             if phase is not None:
                 print("Phase at step {}: {:.2f}".format(step, phase))
-            
                 # Set Targets:
-                targets['ur5left'].setAllQuat(*np.take(prediction, [25,26,27, 31,32,33,34]))
-                targets['ur5right'].setAllQuat(*np.take(prediction, [28,29,30, 35,36,37,38]))
-                targets['base'].abg[2] = prediction[0]
+                targets['ur5left'].set_all_quat(prediction[[25,26,27]], prediction[[31,32,33,34]])
+                targets['ur5right'].set_all_quat(prediction[[28,29,30]], prediction[[35,36,37,38]])
+                targets['base'].set_abg([0, 0, prediction[0]])
             
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(targets)
-            self.send_forces(ctrlr_output, gripper_force=self.gripper_force, update_errors=True)
+            self.send_forces(ctrlr_output, gripper_force=self.gripper_force)
+            self.sim.step()
+            self.viewer.render()
             step += 1        
-
-            # if step > 2000 and step < 4000:
-            #     for id in  [self.sim.model.body_name2id(v) for v in ["ur_EE_ur5left", "ur_EE_ur5right"]]:
-            #         self.sim.data.xfrc_applied[id] = [20,0,0,0,0,0] 
         
         self.targets = targets
         
         self.run_sequence(self.action_config['iros2022_release_sequence'])
-
-        # Close Simulator
-        self.robot.stop()
-        self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":

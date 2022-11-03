@@ -41,8 +41,8 @@ class Device():
         except:
             start_body = 0
         
-        # Get the joint ids, using the specified EE / start body 
         # Reference: ABR Control
+        # Get the joint ids, using the specified EE / start body 
         # start with the end-effector (EE) and work back to the world body
         body_id = model.body_name2id(self.EE)
         joint_ids = []

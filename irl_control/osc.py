@@ -98,7 +98,7 @@ class OSC():
 
         return u_task
 
-    def calc_error(self, target, device):
+    def calc_error(self, target: Target, device: Device):
         """
             Compute the difference between the target and device EE
             for the x,y,z and a,b,g components
@@ -106,17 +106,15 @@ class OSC():
         u_task = np.zeros(6)
         # Calculate x,y,z error
         if np.sum(device.ctrlr_dof_xyz) > 0:
-            diff = device.get_state(DeviceState.EE_XYZ) - target.xyz
+            diff = device.get_state(DeviceState.EE_XYZ) - target.get_xyz()
             u_task[:3] = diff
         
         # Calculate a,b,g error
         if np.sum(device.ctrlr_dof_abg) > 0:
-            t_rot = target.getRot()
-            if not target.use_quat:
-                t_rot = euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz")
+            t_rot = target.get_quat()
             q_d = normalized_vector(t_rot)
             q_r = np.array(qmult(q_d, qconjugate(device.get_state(DeviceState.EE_QUAT))))
-            u_task[3:] =  quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
+            u_task[3:] = quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
         return u_task
     
     def generate(self, targets: Dict[str, Target]):
@@ -171,7 +169,7 @@ class OSC():
 
             # Apply kv gain
             kv = self.device_configs[device.name]['kv']
-            target_vel = np.hstack([target.xyz_vel, target.abg_vel])
+            target_vel = np.hstack([target.get_xyz_vel(), target.get_abg_vel()])
             if np.all(target_vel) == 0:
                 u_all[device.joint_ids_all] = -1 * kv * uv_all[device.joint_ids_all]
             else:
