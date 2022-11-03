@@ -1,6 +1,6 @@
-from control_base import ControlBase
+from dual_insertion import DualInsertion
 
-class CollectData(ControlBase):
+class CollectData(DualInsertion):
     """
     Implements the OSC and Dual UR5 robot
     """
@@ -18,11 +18,9 @@ class CollectData(ControlBase):
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
 
         self.set_record(True)
-
         self.run_sequence(self.action_config['iros2022_demo_sequence'])
 
         self.set_record(False)
-
         self.run_sequence(self.action_config['iros2022_release_sequence'])
 
 

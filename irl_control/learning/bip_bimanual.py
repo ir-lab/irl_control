@@ -1,19 +1,17 @@
-from irl_control.learning.BIP.intprim.filter.spatiotemporal import EnsembleKalmanFilter
-from irl_control.learning.BIP.intprim.filter import KalmanFilter
-from irl_control.learning.BIP.intprim.basis.gaussian_model import GaussianModel
-from irl_control.learning.BIP.intprim.basis.polynomial_model import PolynomialModel
-from irl_control.learning.BIP.intprim.basis.mixture_model import MixtureModel
-from irl_control.learning.BIP.intprim.bayesian_interaction_primitives import BayesianInteractionPrimitive
-from irl_control.learning.BIP.intprim.basis.selection import Selection
-from irl_control.learning.BIP.intprim.filter.align.dtw import fastdtw
-from irl_control.learning.BIP.intprim.util.visualization import plot_distribution
+from intprim.filter.spatiotemporal import EnsembleKalmanFilter
+from intprim.filter import KalmanFilter
+from intprim.basis.gaussian_model import GaussianModel
+from intprim.basis.polynomial_model import PolynomialModel
+from intprim.basis.mixture_model import MixtureModel
+from intprim.bayesian_interaction_primitives import BayesianInteractionPrimitive
+from intprim.basis.selection import Selection
+from intprim.filter.align.dtw import fastdtw
+from intprim.util.visualization import plot_distribution
 
 import numpy as np
 import glob
 import copy
 import os
-
-from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 
 SAVE_PATH = "./data/BIP/model.ip"
@@ -115,18 +113,12 @@ class IntprimStream():
 
         return np.mean(phase_velocities), np.var(phase_velocities)
 
-    def update_stream(self, feedback):
+    def update_stream(self, observation: np.ndarray):
         # Run the interaction primitives only occasionally
         ret_phs = None
         ret_pred = None
-        observation = feedback
         if self.step % 100 == 0:
-            # observation = np.concatenate(( # 6 6 3 3 1 1 3 4
-            #                 feedback["q"], feedback["dq"], feedback["force"], feedback["torque"],
-            #                 [feedback["q_qpos"]], [feedback["q_qvel"]], feedback["tcp_pos"], feedback["tcp_rot"]))
-            # observation = np.take(observation, [0,1,2,3,4,5, 12,13,14,15,16,17, 20,21,22])
             observation = observation.reshape((1,-1))
-
             starting_phase = None
             if not self._enkf:
                 starting_phase = self.last_phase
@@ -139,9 +131,6 @@ class IntprimStream():
             else:
                 self.last_phase = min(self.last_phase + 1.0/self._phase_step, 1.0)
 
-            # self._target_pos = inferred_trajectory.T[0,12:15]
-
-            # logging.info("Predicted phase {:.3f} for pose {}".format(self.last_phase, self._target_pos))
             if self._enkf:
                 self._is_done = phase >= 0.93 # 0.985
                 self._phase_history.append([phase, var[0,0], var[1,1]])
@@ -155,11 +144,6 @@ class IntprimStream():
                     plt.xlabel("Steps")
                     plt.ylabel("Phase")
                     # plt.show()
-                    # fn = os.path.join("/Users/simon/Desktop/Data/motion/picture_sequence.csv")
-                    # This is for phase
-                    # np.savetxt(fn , self._phase_history, delimiter=',')
-                    # This is for motion
-                    # np.savetxt(fn , [p.tolist()+j.tolist() for p,j in zip(self._phase_history,self._joint_history)], delimiter=',')
             else:
                 self._is_done = self.last_phase >= 0.999
             ret_phs = self.last_phase

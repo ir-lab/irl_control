@@ -1,44 +1,13 @@
-from mujoco_py import GlfwContext
-from mujoco_py.mjviewer import MjViewer
 import numpy as np
-from typing import Tuple
-import threading
-from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
-from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
-from enum import Enum
-import os
-import irl_control
-import yaml
-from transforms3d.affines import compose
-from typing import Dict
-from control_base import ControlBase
-from BIP.bip_bimanual import IntprimStream
 from transforms3d.euler import quat2euler, euler2quat
+from enum import Enum
+from typing import Dict
+from dual_insertion import DualInsertion
+from bip_bimanual import IntprimStream
 
-DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
-DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
 
-class Action(Enum):
-    """
-    Action Enums are used to force the action sequence instructions (strings)
-    to be converted into valid actions
-    """
-    WP = 0,
-    GRIP = 1
-
-class ActiveArm:
-    def __init__(self):
-        self.name = "ur5right"
-        self.max_vel = [0]
-
-"""
-The purpose of this example is to test out the robot configuration
-to see how well the gains perform on stabilizing the base and the
-arm that does move rapidly. One of the arms in this demo will move
-wildly to test out this stabilization capability.
-"""
-class CollectData(ControlBase):
+class RunBIP(DualInsertion):
     """
     Implements the OSC and Dual UR5 robot
     """
@@ -48,7 +17,7 @@ class CollectData(ControlBase):
         self.action_config = self.get_action_config(action_config_name)
         super().__init__(self.action_config["device_config"], robot_config_file, scene_file)
            
-    def run(self, demo_type: str, demo_duration: int):        
+    def run(self):
         intprim = IntprimStream()
 
         action_object_names = ['iros2022_action_objects']
@@ -56,10 +25,11 @@ class CollectData(ControlBase):
         self.initialize_action_objects()
         self.run_sequence(self.action_config['iros2022_pickup_sequence'])
 
-        targets: Dict[str, Target] = {}
-        targets['base'] = Target()
-        targets['ur5left'] = Target()
-        targets['ur5right'] = Target()
+        targets: Dict[str, Target] = {
+            'base' : Target(),
+            'ur5left' : Target(),
+            'ur5right' : Target()
+        }
 
         self.sim.step()
         step = 0
@@ -88,7 +58,5 @@ class CollectData(ControlBase):
 # Main entrypoint
 if __name__ == "__main__":
     # Initialize the gain test demo
-    demo = CollectData(robot_config_file="iros2022.yaml", scene_file="iros2022.xml")
-    # Run the gain test
-    demo_name1 = "gain_test"
-    demo.run(demo_name1, 3000)
+    demo = RunBIP(robot_config_file="iros2022.yaml", scene_file="iros2022.xml")
+    demo.run()

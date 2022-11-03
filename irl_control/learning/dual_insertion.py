@@ -32,7 +32,7 @@ class Action(Enum):
     INTERP = 2
 
 
-class ControlBase(MujocoApp):
+class DualInsertion(MujocoApp):
     """
     Implements the OSC and Dual UR5 robot
     """
@@ -69,6 +69,9 @@ class ControlBase(MujocoApp):
         self.hashids = Hashids()
     
     def set_record(self, val):
+        """
+        Create the CSV to record the expert demonstrations
+        """
         self.record = val
         if val == False and len(self.recording) > 0:
             fn = os.path.join("./data/BIP/", self.hashids.encode(calendar.timegm(time.gmtime())) + ".csv")
@@ -127,6 +130,11 @@ class ControlBase(MujocoApp):
         return param_dict
 
     def is_done(self, max_error, step):
+        """
+        Determines whether an action is done based on (currently)
+        the velocities of the devices. Alternative options include
+        the L2 error (commented out)
+        """
         # Based on steps
         if step < 25:
             return False
@@ -176,6 +184,9 @@ class ControlBase(MujocoApp):
             self.maybe_record_states()
 
     def fix_rot(self, rot):
+        """
+        Ensure the w term is positive
+        """
         rot = np.asarray(rot)
         if rot[0] < 0:
             rot *= -1.0
@@ -323,6 +334,9 @@ class ControlBase(MujocoApp):
         return data
     
     def interpolate_waypoint(self, params):
+        """
+        Linearly interpolate a waypoint for N steps
+        """
         # Figure out where we currently are
         current_pos = []
         current_rot = []
@@ -400,6 +414,9 @@ class ControlBase(MujocoApp):
             return Action.INTERP
 
     def run_sequence(self, action_sequence):
+        """
+        Main loop for running an action sequence defined by the yaml file
+        """
         # self.start_pos = np.copy(self.active_arm.get_state('ee_xyz'))
         for action_entry in action_sequence:
             if "name" in action_entry.keys():
