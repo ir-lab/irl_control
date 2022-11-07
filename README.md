@@ -40,3 +40,5 @@ The objective for [this example](irl_control/examples/gain_test.py) is to evalua
 In [this example](irl_control/examples/force_test.py) used to demonstrate how the admittance control react to the external environment, here the target position of the left arm is given such that the hit the wall, we can see that the arm bounces of the wall insteading of pushing against the wall with large force.
 
 <img src="img/force_test.gif" alt="drawing"/>
+
+We'd like to thank/reference ABR control (https://github.com/abr/abr_control) for the operational space controller design and helpful guide on interacting with mujoco-py!
