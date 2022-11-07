@@ -12,7 +12,8 @@ class Device():
         self.sim = sim
         # Assign all of the yaml parameters
         self.name = device_yml['name']
-        self.max_vel = device_yml['max_vel']
+        self.max_vel = device_yml.get('max_vel')
+        #self.max_vel = device_yml['max_vel']
         self.EE = device_yml['EE']
         self.ctrlr_dof_xyz = device_yml['ctrlr_dof_xyz']
         self.ctrlr_dof_abg = device_yml['ctrlr_dof_abg']
