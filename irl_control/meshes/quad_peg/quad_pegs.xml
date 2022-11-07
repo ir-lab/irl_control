@@ -1,0 +1,25 @@
+<mujocoimport>
+    <asset>
+        <mesh name="dual_peg_base"    file="quad_peg/quad_peg_base.stl" />
+        <mesh name="dual_peg_pin_a"   file="dual_pegs/pin_a.stl" />
+        <mesh name="dual_peg_stand_a" file="dual_pegs/stand_a.stl" />
+        <mesh name="dual_peg_pin_b"   file="dual_pegs/pin_b.stl" />
+        <mesh name="dual_peg_stand_b" file="dual_pegs/stand_b.stl" />
+    </asset>
+
+    <worldbody>
+        <body name="quad_peg" pos="0.0 0.6 0.0" quat="1.0 0 0 1.0">
+            <freejoint name="free_joint_quad_peg"/>
+            <inertial pos="0 0 0" mass="1.0" diaginertia="0.005 0.005 0.005"/>
+            <geom name="dual_peg_base" type="mesh" mesh="dual_peg_base" pos="0 0 0.05" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_pin_a" type="mesh" mesh="dual_peg_pin_a" pos="0 0.13 0" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_stand_a" type="mesh" mesh="dual_peg_stand_a" pos="0 0.13 0" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_pin_b" type="mesh" mesh="dual_peg_pin_b" pos="0 -0.33 0" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_stand_b" type="mesh" mesh="dual_peg_stand_b" pos="0 -0.33 0" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_pin_c" type="mesh" mesh="dual_peg_pin_a" pos="0 0.33 0" quat="0 0 0 0.707108" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_stand_c" type="mesh" mesh="dual_peg_stand_a" pos="0 0.33 0" quat="0 0 0 0.707108" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_pin_d" type="mesh" mesh="dual_peg_pin_b" pos="0 -0.13 0" quat="0 0 0 0.707108" material="black" conaffinity="1" contype="2"/>
+            <geom name="dual_peg_stand_d" type="mesh" mesh="dual_peg_stand_b" pos="0 -0.13 0" quat="0 0 0 0.707108" material="black" conaffinity="1" contype="2"/>
+        </body>
+    </worldbody>
+</mujocoimport>

@@ -23,11 +23,10 @@ class AdmitTest(MujocoApp):
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, admit_device_configs, nullspace_config,admittance = True)
-        # Start collecting device states from simulator
-        # NOTE: This is necessary when you are using OSC, as it assumes
-        #       that the robot.start() thread is running.
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
+        
         # Keep track of device target errors
         self.errors = dict()
         self.errors['ur5right'] = 0
@@ -53,23 +52,23 @@ class AdmitTest(MujocoApp):
         time_thread.start()
         threshold_ee = 0.1
         #Define targets for both arms
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
             'ur5left' : Target(),  
         }
         #Get the targets for both arms
-        right_wps, left_wps = self.gen_target()
+        right_wp, left_wp = self.gen_target()
         ur5right = self.robot.sub_devices_dict['ur5right']
         ur5left = self.robot.sub_devices_dict['ur5left']
         while self.timer_running:
             #set the targets position and orientation of both arms
             count += 1
-            targets['ur5right'].xyz = right_wps
-            targets['ur5left'].xyz = left_wps
-            targets['ur5left'].abg = np.array([0,-1*np.pi/2,0])
+            targets['ur5right'].set_xyz(right_wp)
+            targets['ur5left'].set_xyz(left_wp)
+            targets['ur5left'].set_abg(np.array([0,-1*np.pi/2,0]))
             #set the mocap position to target position
-            self.sim.data.set_mocap_pos('target_red', right_wps)
-            self.sim.data.set_mocap_pos('target_blue', left_wps)
+            self.sim.data.set_mocap_pos('target_red', right_wp)
+            self.sim.data.set_mocap_pos('target_blue', left_wp)
             #Genetrate the admittance control output
             ctrlr_output = self.controller.generate(targets)
             for force_idx, force  in zip(*ctrlr_output):
@@ -82,7 +81,7 @@ class AdmitTest(MujocoApp):
             self.viewer.render()
             functions.mj_inverse(self.model,self.sim.data)
         time_thread.join()
-        self.robot_data_thread.join()
+        # self.robot_data_thread.join()
         glfw.destroy_window(self.viewer.window)
         
 if __name__ == "__main__":

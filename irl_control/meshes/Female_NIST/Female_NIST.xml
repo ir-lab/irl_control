@@ -58,7 +58,7 @@
    <worldbody>
       <body name="nist_female" pos="0.7 0.4 -0.00002">
          <freejoint name="free_joint_female"/>
-         <inertial pos="0 0 0" mass="0.1" diaginertia="0.005 0.005 0.005"/>
+         <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
          <geom name="Female_NIST_002r005002" type="mesh" mesh="Female_NIST_002r005002" pos="0 0 0" conaffinity="1" contype="1"/>
          <geom name="Female_NIST_002r006005" type="mesh" mesh="Female_NIST_002r006005" pos="0 0 0" conaffinity="1" contype="1"/>
          <geom name="Female_NIST_002r005000" type="mesh" mesh="Female_NIST_002r005000" pos="0 0 0" conaffinity="1" contype="1"/>

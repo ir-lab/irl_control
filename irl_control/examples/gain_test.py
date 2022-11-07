@@ -5,6 +5,7 @@ from typing import Tuple
 import threading
 from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
+from irl_control.device import DeviceState
 
 """
 The purpose of this example is to test out the robot configuration
@@ -120,7 +121,7 @@ class GainTest(MujocoApp):
         threshold_ee = 0.1
         
         # Initialize the targets to be filled in later
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
             'ur5left' : Target(), 
             'base' : Target() 
@@ -134,8 +135,8 @@ class GainTest(MujocoApp):
         left_wp_idx = 0
         while self.timer_running:
             # Set the target values for the robot's devices
-            targets['ur5right'].xyz = right_wps[right_wp_idx]
-            targets['ur5left'].xyz = left_wps[left_wp_idx]
+            targets['ur5right'].set_xyz(right_wps[right_wp_idx])
+            targets['ur5left'].set_xyz(left_wps[left_wp_idx])
             # targets['base'].abg[2] = 0.0
             
             # Generate an OSC signal to steer robot toward the targets
@@ -147,8 +148,8 @@ class GainTest(MujocoApp):
             
             # Collect errors for the arms in order to determine whether to update
             # waypoint indexes
-            self.errors['ur5right'] = np.linalg.norm(ur5right.get_state('ee_xyz') - targets['ur5right'].xyz)
-            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state('ee_xyz') - targets['ur5left'].xyz)
+            self.errors['ur5right'] = np.linalg.norm(ur5right.get_state(DeviceState.EE_XYZ) - targets['ur5right'].get_xyz())
+            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state(DeviceState.EE_XYZ) - targets['ur5left'].get_xyz())
             if self.errors['ur5right']  < threshold_ee:
                 if right_wp_idx < right_wps.shape[0] - 1:
                     right_wp_idx += 1

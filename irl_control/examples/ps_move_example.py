@@ -11,6 +11,7 @@ import threading
 from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
 from irl_control.input_devices.ps_move import PSMoveInterface, MoveName
+from irl_control.device import DeviceState
 
 """
 This demo uses the PS Move controllers to control both robot arms
@@ -54,8 +55,8 @@ class PSMoveExample(MujocoApp):
         self.grip_pos = dict([(move_name, 0.0) for move_name in MoveName])
         
         # Start collecting the robot states
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
 
     def update_move_button_states(self, sleep_time = 0.1):
         """
@@ -85,7 +86,7 @@ class PSMoveExample(MujocoApp):
 
     def run(self):
         # Start a timer for the demo
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(),
             'ur5left' : Target(),
             'base' : Target()
@@ -134,20 +135,20 @@ class PSMoveExample(MujocoApp):
             # Set the targets for operational space control if the trigger is pressed
             if self.move_states[MoveName.RIGHT].get('trigger'):
                 ur5right.ctrlr_dof_abg = [True, True, True]
-                targets['ur5right'].xyz = r_xyz # [xpos_r, ypos_r, zpos_r]
-                targets['ur5right'].abg = r_ang
+                targets['ur5right'].set_xyz(r_xyz)
+                targets['ur5right'].set_abg(r_ang)
             else:
                 ur5right.ctrlr_dof_abg = [False, False, False]
-                targets['ur5right'].xyz = ur5right.get_state('ee_xyz')
+                targets['ur5right'].set_xyz(ur5right.get_state(DeviceState.EE_XYZ))
 
             # Set the targets for operational space control if the trigger is pressed
             if self.move_states[MoveName.LEFT].get('trigger'):
                 ur5left.ctrlr_dof_abg = [True, True, True]
-                targets['ur5left'].xyz = l_xyz # [xpos_r, ypos_r, zpos_r]
-                targets['ur5left'].abg = l_ang
+                targets['ur5left'].set_xyz(l_xyz)
+                targets['ur5left'].set_abg(l_ang)
             else:
                 ur5left.ctrlr_dof_abg = [False, False, False]
-                targets['ur5left'].xyz = ur5left.get_state('ee_xyz')
+                targets['ur5left'].set_xyz(ur5left.get_state(DeviceState.EE_XYZ))
 
             # Get the control from the operational space control based on the targets
             ctrlr_output = self.controller.generate(targets)
@@ -178,8 +179,8 @@ class PSMoveExample(MujocoApp):
             self.viewer.render()
             
         # Join threads / Stop the simulator 
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":

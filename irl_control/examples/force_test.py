@@ -4,6 +4,7 @@ import threading
 from typing import Dict, Tuple
 from irl_control import OSC, MujocoApp
 from irl_control.utils import Target
+from irl_control.device import DeviceState
 import csv
 
 class ForceTest(MujocoApp):
@@ -21,11 +22,10 @@ class ForceTest(MujocoApp):
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, admit_device_configs, nullspace_config,admittance = True)
-        # Start collecting device states from simulator
-        # NOTE: This is necessary when you are using OSC, as it assumes
-        #       that the robot.start() thread is running.
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
+
         # Keep track of device target errors
         self.errors = dict()
         self.errors['ur5right'] = 0
@@ -35,7 +35,9 @@ class ForceTest(MujocoApp):
         """
         Generates the target position for both arms 
         """  
-        right_wp = np.array([0.3, 0.46432, 0.36243])
+        right_wp = np.array([
+            [0.3, 0.46432, 0.36243]
+        ])
 
         left_wp = np.array([
             [-0.3, 0.46432, 0.5],
@@ -63,7 +65,7 @@ class ForceTest(MujocoApp):
         time_thread.start()
         threshold_ee = 0.01
         #Define targets for both arms
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
             'ur5left' : Target(),  
         }
@@ -85,9 +87,9 @@ class ForceTest(MujocoApp):
             
         while self.timer_running:
             #set the targets position and orientation of both arms
-            targets['ur5right'].xyz = right_wps[right_wp_index]
-            targets['ur5left'].xyz = left_wps[left_wp_index]
-            targets['ur5left'].abg = np.array([0,0,-1*np.pi/2])
+            targets['ur5right'].set_xyz(right_wps[right_wp_index])
+            targets['ur5left'].set_xyz(left_wps[left_wp_index])
+            targets['ur5left'].set_abg(np.array([0,0,-1*np.pi/2]))
             #set the mocap position to target position
             self.sim.data.set_mocap_pos('target_red', right_wps[right_wp_index])
             self.sim.data.set_mocap_pos('target_blue', left_wps[left_wp_index])
@@ -96,7 +98,7 @@ class ForceTest(MujocoApp):
             for force_idx, force  in zip(*ctrlr_output):
                 self.sim.data.ctrl[force_idx] = force
             #Measure the errors 
-            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state('ee_xyz') - targets['ur5left'].xyz)
+            self.errors['ur5left'] = np.linalg.norm(ur5left.get_state(DeviceState.EE_XYZ) - targets['ur5left'].get_xyz())
             #Move to next target if error is less then threshold
             if self.errors['ur5left']  < threshold_ee:
                 if left_wp_index < left_wps.shape[0] - 1 :
@@ -107,7 +109,7 @@ class ForceTest(MujocoApp):
             self.viewer.render()
             functions.mj_inverse(self.model,self.sim.data)
             #Measure force on left end-effector
-            force = ur5left.get_force()
+            force = ur5left.get_state(DeviceState.FORCE)
             x += 1
             #write force values to CSV
             with open('data.csv', 'a') as csv_file:
@@ -121,7 +123,7 @@ class ForceTest(MujocoApp):
                     }
                 csv_writer.writerow(info)
         time_thread.join()
-        self.robot_data_thread.join()
+        # self.robot_data_thread.join()
         glfw.destroy_window(self.viewer.window)
 
 if __name__ == "__main__":

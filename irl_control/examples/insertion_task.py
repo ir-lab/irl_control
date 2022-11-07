@@ -10,11 +10,14 @@ import time
 import yaml
 import os
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
+from transforms3d.quaternions import qmult
 from transforms3d.affines import compose
+from irl_control.device import DeviceState
 
 # Define the default orientations of the end effectors
 DEFAULT_EE_ROT = np.deg2rad([0, -90, -90])
 DEFAULT_EE_ORIENTATION = quat2euler(euler2quat(*DEFAULT_EE_ROT, 'sxyz'), 'rxyz')
+DEFAULT_EE_QUAT = euler2quat(*DEFAULT_EE_ROT)
 
 class Action(Enum):
     """
@@ -56,11 +59,8 @@ class InsertionTask(MujocoApp):
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
 
-        # Start collecting device states from simulator
-        # NOTE: This is necessary when you are using OSC, as it assumes
-        #       that the robot.start() thread is running.
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
         
         # Keep track of device target errors
         self.errors: Dict[str, float] = dict()
@@ -209,8 +209,8 @@ class InsertionTask(MujocoApp):
         specified in the action sequence.
         """
         # Set targets for passive arm
-        self.targets[self.passive_arm.name].xyz = self.passive_arm.get_state('ee_xyz')
-        self.targets[self.passive_arm.name].abg = DEFAULT_EE_ORIENTATION
+        self.targets[self.passive_arm.name].set_xyz(self.passive_arm.get_state(DeviceState.EE_XYZ))
+        self.targets[self.passive_arm.name].set_quat(DEFAULT_EE_QUAT)
         
         # Set targets for active arm
         if 'target_xyz' in params.keys():
@@ -240,7 +240,7 @@ class InsertionTask(MujocoApp):
             else:
                 print("Invalid type for target_xyz!")
                 raise ValueError
-            self.targets[self.active_arm.name].xyz = target
+            self.targets[self.active_arm.name].set_xyz(target)
         else:
             print("No Target Specified for Waypoint!")
             raise KeyError('target_xyz')
@@ -253,20 +253,21 @@ class InsertionTask(MujocoApp):
                 # Get the quaternion for the target object
                 obj_quat = self.sim.data.get_joint_qpos(target_obj['joint_name'])[-4:]
                 # Add the ee offset to the default ee orientation
-                grip_eul = DEFAULT_EE_ROT + [0,0,np.deg2rad(target_obj['grip_yaw'])]
+                grip_eul = DEFAULT_EE_ROT + [0, 0, np.deg2rad(target_obj['grip_yaw'])]
+                # grip_quat = DEFAULT_EE_QUAT * euler2quat([0, 0, np.deg2rad(target_obj['grip_yaw'])])
                 tfmat_obj = compose([0,0,0], quat2mat(obj_quat), [1,1,1])
-                tfmat_grip = compose([0,0,0], euler2mat(*grip_eul, 'sxyz'), [1,1,1])
+                tfmat_grip = compose([0,0,0], euler2mat(*grip_eul), [1,1,1])
                 tfmat = np.matmul(tfmat_obj, tfmat_grip)
                 # Extract the end effector yaw from the final rotation matrix output
-                target_abg = np.array(mat2euler(tfmat[:3, :3], 'rxyz'))
-            elif isinstance(params['target_xyz'], list):
+                target_abg = np.array(mat2euler(tfmat[:3, :3]))
+            elif isinstance(params['target_abg'], list):
                 target_abg = np.deg2rad(params['target_abg'])
             else:
-                print("Invalid type for target_xyz!")
+                print("Invalid type for target_abg!")
                 raise ValueError
-            self.targets[self.active_arm.name].abg = target_abg
+            self.targets[self.active_arm.name].set_abg(target_abg)
         else:
-            self.targets[self.active_arm.name].abg = DEFAULT_EE_ORIENTATION
+            self.targets[self.active_arm.name].set_quat(DEFAULT_EE_QUAT)
     
     def update_action_ctrl_params(self, params, action: Action):
         """
@@ -310,7 +311,7 @@ class InsertionTask(MujocoApp):
             self.set_free_joint_qpos(obj['joint_name'], quat=target_quat, pos=target_pos)
 
     def run_sequence(self, action_sequence):
-        self.start_pos = np.copy(self.active_arm.get_state('ee_xyz'))
+        self.start_pos = np.copy(self.active_arm.get_state(DeviceState.EE_XYZ))
         for action_entry in action_sequence:
             action = self.string2action(action_entry['action'])
             action_func = self.action_map[action]
@@ -414,8 +415,8 @@ class InsertionTask(MujocoApp):
                 self.run_sequence(action_config[action_sequence_name])            
         
         # Stop collecting the robot states and join threads
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":

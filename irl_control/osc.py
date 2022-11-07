@@ -1,3 +1,4 @@
+from irl_control.robot import RobotState
 import numpy as np
 import mujoco_py as mjp
 from transforms3d.derivations.quaternions import qmult
@@ -7,6 +8,7 @@ from transforms3d.utils import normalized_vector
 from typing import Dict, Tuple
 from irl_control import Robot, Device
 from irl_control.utils import ControllerConfig, Target
+from irl_control.device import DeviceState
 
 class OSC():
     """
@@ -95,11 +97,8 @@ class OSC():
             raise Exception
 
         return u_task
-    
-    def calc_error(self, target, device):
-        return self.__calc_error(target, device)
 
-    def __calc_error(self, target, device):
+    def calc_error(self, target: Target, device: Device):
         """
             Compute the difference between the target and device EE
             for the x,y,z and a,b,g components
@@ -107,17 +106,17 @@ class OSC():
         u_task = np.zeros(6)
         # Calculate x,y,z error
         if np.sum(device.ctrlr_dof_xyz) > 0:
-            diff = device.get_state('ee_xyz') - target.xyz
+            diff = device.get_state(DeviceState.EE_XYZ) - target.get_xyz()
             u_task[:3] = diff
         
         # Calculate a,b,g error
         if np.sum(device.ctrlr_dof_abg) > 0:
-            q_d = normalized_vector(euler2quat(target.abg[0], target.abg[1], target.abg[2], axes="rxyz"))
-            q_r = np.array(qmult(q_d, qconjugate(device.get_state('ee_quat'))))
-            u_task[3:] =  quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
+            t_rot = target.get_quat()
+            q_d = normalized_vector(t_rot)
+            q_r = np.array(qmult(q_d, qconjugate(device.get_state(DeviceState.EE_QUAT))))
+            u_task[3:] = quat2euler(qconjugate(q_r)) # -q_r[1:] * np.sign(q_r[0])
         return u_task
     
-
     def generate(self, targets: Dict[str, Target]):
         """
             Generate forces for the corresponding devices which are in the 
@@ -127,15 +126,27 @@ class OSC():
             ----------
             targets: dict of device names mapping to Target objects
         """
+        if self.robot.is_using_sim() is False:
+            assert self.robot.is_running(), "Robot must be running!"
+        
+        robot_state = self.robot.get_all_states()
         # Get the Jacobian for the all of devices passed in
-        J, J_idxs = self.robot.get_jacobian(targets.keys())
+        Js, J_idxs = robot_state[RobotState.J]
+        # J, J_idxs = self.robot.get_jacobian(targets.keys())
+        J = np.array([])
+        for device_name in targets.keys():
+            J = np.vstack([J, Js[device_name]]) if J.size else Js[device_name]
         # Get the inertia matrix for the robot
-        M = self.robot.get_M()
+        # M = self.robot.get_M()
+        M = robot_state[RobotState.M]
+        
         # Compute the inverse matrices used for task space operations 
         Mx, M_inv = self.__Mx(J, M)
 
         # Initialize the control vectors and sim data needed for control calculations
-        dq = self.sim.data.qvel[self.robot.joint_ids_all]
+        # dq = self.robot.get_dq()
+        dq = robot_state[RobotState.DQ]
+        
         dx = np.dot(J, dq)
         uv_all = np.dot(M, dq)
         u_all = np.zeros(self.robot.num_joints_total)
@@ -145,9 +156,9 @@ class OSC():
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
             # Calculate the error from the device EE to target
-            u_task = self.__calc_error(target, device)
-            stiffness = np.array(self.device_configs[device_name].get_params('k')[0] + [1]*3)
-            damping = np.array(self.device_configs[device_name].get_params('d')[0] + [1]*3)
+            u_task = self.calc_error(target, device)
+            stiffness = np.array(self.device_configs[device_name]['k'] + [1]*3)
+            damping = np.array(self.device_configs[device_name]['d'] + [1]*3)
             # Apply gains to the error terms
             if device.max_vel is not None:
                 u_task = self.__limit_vel(u_task, device)
@@ -158,15 +169,15 @@ class OSC():
 
             # Apply kv gain
             kv = self.device_configs[device.name]['kv']
-            target_vel = np.hstack([target.xyz_vel, target.abg_vel])
+            target_vel = np.hstack([target.get_xyz_vel(), target.get_abg_vel()])
             if np.all(target_vel) == 0:
                 u_all[device.joint_ids_all] = -1 * kv * uv_all[device.joint_ids_all]
             else:
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]
                 u_task[device.ctrlr_dof] += kv * diff * damping[device.ctrlr_dof]
             
-            force = np.append(device.get_force(),device.get_torque())
-            ext_f = np.append(ext_f,force[device.ctrlr_dof])
+            force = np.append(robot_state[device_name][DeviceState.FORCE], robot_state[device_name][DeviceState.TORQUE])
+            ext_f = np.append(ext_f, force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
         # Transform task space signal to joint space

@@ -1,0 +1,10 @@
+<mujoco>
+    <compiler angle="radian" meshdir="../meshes/"/>
+    <option timestep="0.0005" solver="Newton" impratio="10" tolerance="1e-10"/>
+    <size njmax="8000" nconmax="4000"/>
+    <include file="world.xml"/>
+    <include file="dual_ur5.xml"/>
+
+    <include file="../meshes/quad_peg/quad_bracket.xml"/>
+    <include file="../meshes/quad_peg/quad_pegs.xml"/>
+</mujoco>

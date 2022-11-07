@@ -1,7 +1,7 @@
 from mujoco_py import GlfwContext
 from mujoco_py.mjviewer import MjViewer
 import numpy as np
-from typing import Tuple
+from typing import Dict
 import threading
 from irl_control import OSC, MujocoApp
 from transforms3d.euler import quat2euler, euler2quat, quat2mat, mat2euler, euler2mat
@@ -32,8 +32,10 @@ class SpaceMouseDemo(MujocoApp):
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
+        
         self.viewer = MjViewer(self.sim) 
     
     def run_ik_demo(self, demo_duration: int):
@@ -41,7 +43,7 @@ class SpaceMouseDemo(MujocoApp):
         time_thread = threading.Thread(target=self.sleep_for, args=(demo_duration,))
         time_thread.start()
         
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
             # 'ur5left' : Target(), 
             # 'base' : Target() 
@@ -72,8 +74,8 @@ class SpaceMouseDemo(MujocoApp):
             l_ang = np.array(mat2euler(tfmat_l[:3, :3]))
             
             self.sim.data.set_mocap_pos('plate', [x,y,z])
-            targets['ur5right'].xyz = r_xyz
-            targets['ur5right'].abg = r_ang
+            targets['ur5right'].set_xyz(r_xyz)
+            targets['ur5right'].set_abg(r_ang)
             # targets['ur5left'].xyz = l_xyz
             # targets['ur5left'].abg = l_ang
             
@@ -101,7 +103,7 @@ class SpaceMouseDemo(MujocoApp):
         time_thread = threading.Thread(target=self.sleep_for, args=(demo_duration,))
         time_thread.start()
         
-        targets = { 
+        targets: Dict[str, Target] = { 
             'ur5right' : Target(),
             'ur5left' : Target(),
             'base' : Target()
@@ -130,11 +132,12 @@ class SpaceMouseDemo(MujocoApp):
             l_ang = np.array(mat2euler(tfmat_l[:3, :3]))
             
             self.sim.data.set_mocap_pos('plate', [x,y,z])
-            targets['ur5right'].xyz = r_xyz
-            targets['ur5right'].abg = r_ang
-            targets['ur5left'].xyz = l_xyz
-            targets['ur5left'].abg = l_ang
-            targets['base'].abg[2] = np.arctan2(y, x) - np.pi/2
+            targets['ur5right'].set_xyz(r_xyz)
+            targets['ur5right'].set_abg(r_ang)
+            targets['ur5left'].set_xyz(l_xyz)
+            targets['ur5left'].set_abg(l_ang)
+            targets['base'].set_abg([0 , 0, np.arctan2(y, x) - np.pi/2])
+            
             ctrlr_output = self.controller.generate(targets)
             for force_idx, force  in zip(*ctrlr_output):
                 self.sim.data.ctrl[force_idx] = force
@@ -156,8 +159,8 @@ class SpaceMouseDemo(MujocoApp):
             self.viewer.render()
             
         # Join threads / Stop the simulator 
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
         time_thread.join()
 
 if __name__ == "__main__":
