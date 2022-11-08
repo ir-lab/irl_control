@@ -50,7 +50,7 @@ class AdmitTest(MujocoApp):
         count = 0
         time_thread = threading.Thread(target=self.sleep_for, args=(50,))
         time_thread.start()
-        threshold_ee = 0.1
+        body_id = self.sim.model.body_name2id("left_outer_knuckle_ur5left")
         #Define targets for both arms
         targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
@@ -58,8 +58,6 @@ class AdmitTest(MujocoApp):
         }
         #Get the targets for both arms
         right_wp, left_wp = self.gen_target()
-        ur5right = self.robot.sub_devices_dict['ur5right']
-        ur5left = self.robot.sub_devices_dict['ur5left']
         while self.timer_running:
             #set the targets position and orientation of both arms
             count += 1
@@ -74,12 +72,11 @@ class AdmitTest(MujocoApp):
             for force_idx, force  in zip(*ctrlr_output):
                 self.sim.data.ctrl[force_idx] = force
             #Apply external force on left end effector
-            self.sim.data.xfrc_applied[38] = [0,0,0,0,0,0]
+            self.sim.data.xfrc_applied[body_id] = [0,0,0,0,0,0]
             if count > 3000 and count < 5000:
-                self.sim.data.xfrc_applied[38] = [0,0,20,0,0,0]   
+                self.sim.data.xfrc_applied[body_id] = [20,0,0,0,0,0]
             self.sim.step()
             self.viewer.render()
-            functions.mj_inverse(self.model,self.sim.data)
         time_thread.join()
         # self.robot_data_thread.join()
         glfw.destroy_window(self.viewer.window)
