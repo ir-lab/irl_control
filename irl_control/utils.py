@@ -13,6 +13,7 @@ class Target():
         self.__xyz_vel = np.array(xyz_abg_vel)[:3]
         self.__quat = np.array(euler2quat(*xyz_abg[3:]))
         self.__quat_vel = np.array(euler2quat(*xyz_abg_vel[3:]))
+        self.active = True
     
     def get_xyz(self):
         return self.__xyz

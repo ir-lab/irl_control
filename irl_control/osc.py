@@ -153,6 +153,11 @@ class OSC():
         u_task_all = np.array([])
         ext_f = np.array([])
 
+        if 'base' not in targets.keys() or targets['base'].active is False:
+            x_pos = (targets['ur5left'].get_xyz()[0] + targets['ur5right'].get_xyz()[0])/2
+            y_pos = (targets['ur5left'].get_xyz()[1] + targets['ur5right'].get_xyz()[1])/2
+            targets['base'].set_abg([0, 0, np.arctan2(y_pos, x_pos) - np.pi/2])
+
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
             # Calculate the error from the device EE to target

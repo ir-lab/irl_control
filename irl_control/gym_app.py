@@ -25,9 +25,10 @@ GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
 class GymBimanual(gym.Env):
-    def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100):
+    def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100, 
+                 render_scene=True, record=False, manual_base_ctrl=False):
         
-        self.action_space = gym.spaces.Box(low=-2.0*np.ones(15, dtype=np.float32), high=2.0*np.ones(15, dtype=np.float32))
+        self.action_space = gym.spaces.Box(low=-2.0*np.ones(14, dtype=np.float32), high=2.0*np.ones(14, dtype=np.float32))
         self.observation_space = gym.spaces.Box(low=-15*np.ones(25, dtype=np.float32), high=15*np.ones(25, dtype=np.float32))
         
         main_dir = os.path.dirname(irl_control.__file__)
@@ -57,8 +58,9 @@ class GymBimanual(gym.Env):
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance = True)
 
         self.hashids = Hashids()
-        self.record = False
-        self.render_scene = False
+        self.record = record
+        self.render_scene = render_scene
+        self.manual_base_ctrl = manual_base_ctrl
         self.picked_up = False
         
         self.data_collect_hz = data_collect_hz
@@ -79,12 +81,12 @@ class GymBimanual(gym.Env):
         self.step_count = 0
     
     def targets2actions(self, targets: Dict[str, Target]):
-        actions = np.zeros(15, dtype=np.float32)
+        actions = np.zeros(14, dtype=np.float32)
         actions[:3] = targets['ur5left'].get_xyz()
         actions[3:6] = targets['ur5right'].get_xyz()
         actions[6:10] = targets['ur5left'].get_quat()
         actions[10:14] = targets['ur5right'].get_quat()
-        actions[14] = targets['base'].get_abg()[2]
+        # actions[14] = targets['base'].get_abg()[2]
         return actions
 
     def actions2targets(self, actions):
@@ -100,7 +102,8 @@ class GymBimanual(gym.Env):
         targets['ur5left'].set_quat(actions[6:10])
         targets['ur5right'].set_quat(actions[10:14])
         
-        targets['base'].set_abg([0, 0, actions[14]])
+        # targets['base'].set_abg([0, 0, actions[14]])
+        targets['base'].active = self.manual_base_ctrl
         
         return targets
 
@@ -112,7 +115,7 @@ class GymBimanual(gym.Env):
         self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
         self.sim.step()
         if self.render_scene:
-            self.render()
+            self.viewer.render()
         
         actions = self.targets2actions(targets)
         obs = self.__observe()
