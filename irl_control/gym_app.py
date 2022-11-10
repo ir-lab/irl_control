@@ -25,10 +25,10 @@ GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
 class GymBimanual(gym.Env):
-    def __init__(self, robot_config_file, scene_file, osc_device_pairs = None):
+    def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100):
         
-        self.action_space = gym.spaces.Box(low=-2.0*np.ones(14), high=2.0*np.ones(14))
-        self.observation_space = gym.spaces.Box(low=-15*np.ones(25), high=15*np.ones(25))
+        self.action_space = gym.spaces.Box(low=-2.0*np.ones(15, dtype=np.float32), high=2.0*np.ones(15, dtype=np.float32))
+        self.observation_space = gym.spaces.Box(low=-15*np.ones(25, dtype=np.float32), high=15*np.ones(25, dtype=np.float32))
         
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
@@ -58,8 +58,11 @@ class GymBimanual(gym.Env):
 
         self.hashids = Hashids()
         self.record = False
-        self.render_scene = True
-
+        self.render_scene = False
+        self.picked_up = False
+        
+        self.data_collect_hz = data_collect_hz
+        
         self.prev_time = time.time()
         if self.render_scene:
             self.viewer = MjViewer(self.sim)
@@ -73,16 +76,37 @@ class GymBimanual(gym.Env):
         self.__action_hist = []
         self.__observation_hist = []
         self.__reward_hist = []
+        self.step_count = 0
     
     def targets2actions(self, targets: Dict[str, Target]):
-        actions = np.zeros(14)
+        actions = np.zeros(15, dtype=np.float32)
         actions[:3] = targets['ur5left'].get_xyz()
         actions[3:6] = targets['ur5right'].get_xyz()
         actions[6:10] = targets['ur5left'].get_quat()
         actions[10:14] = targets['ur5right'].get_quat()
+        actions[14] = targets['base'].get_abg()[2]
         return actions
 
-    def step(self, targets: Dict[str, Target]):
+    def actions2targets(self, actions):
+        targets: Dict[str, Target] = {
+            'base' : Target(),
+            'ur5left' : Target(),
+            'ur5right' : Target()
+        }
+
+        targets['ur5left'].set_xyz(actions[:3])
+        targets['ur5right'].set_xyz(actions[3:6])
+        
+        targets['ur5left'].set_quat(actions[6:10])
+        targets['ur5right'].set_quat(actions[10:14])
+        
+        targets['base'].set_abg([0, 0, actions[14]])
+        
+        return targets
+
+    # def step(self, targets: Dict[str, Target]):
+    def step(self, actions):
+        targets = self.actions2targets(actions)
         # Generate an OSC signal to steer robot toward the targets
         ctrlr_output = self.controller.generate(targets)
         self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
@@ -95,7 +119,7 @@ class GymBimanual(gym.Env):
         reward = self.__reward()
         done = self.__is_done()
         self.__maybe_record_states(actions, obs, reward)
-        return obs, reward, done
+        return obs, reward, done, {}
 
     # def reset(self):
     #     # Reset the state of the environment to an initial state
@@ -126,17 +150,30 @@ class GymBimanual(gym.Env):
             self.recording = []
 
     def __reward(self):
-        return -1
+        return 0.1
 
     def __is_done(self):
-        return False
+        # return False
+        if self.picked_up:
+            self.step_count += 1
+            free_joint_name = "free_joint_quad_grommet"
+            jnt_id = self.sim.model.joint_name2id(free_joint_name)
+            offset = self.sim.model.jnt_qposadr[jnt_id]
+            pos_idxs = np.arange(offset, offset+3)
+            pos = self.sim.data.qpos[pos_idxs]
+            is_done = pos[2] < 0.0001
+            if is_done:
+                print(f"Robot ran for {self.step_count} steps")
+            return is_done
+        else:
+            return False
 
     def __maybe_record_states(self, action, observation, reward, verbose=False):
         """
         Optionally record states if self.record is set to True
         """
         if self.record:
-            interval = float(1./60)
+            interval = float(1./self.data_collect_hz)
             if (time.time() - self.prev_time) >= interval:
                 self.prev_time = time.time()
                 self.__observation_hist.append(observation)
@@ -174,7 +211,7 @@ class GymBimanual(gym.Env):
             
             state['ur5right'][DeviceState.FORCE],                   # 20-22
             state['ur5right'][DeviceState.TORQUE],                  # 23-25
-        ))
+        ), dtype=np.float32)
 
         return observations
     
@@ -196,7 +233,7 @@ class GymBimanual(gym.Env):
             
             self.__fix_rot(state['ur5left'][DeviceState.EE_QUAT]),  # 32-35
             self.__fix_rot(state['ur5right'][DeviceState.EE_QUAT])  # 36-39
-        ))
+        ), dtype=np.float32)
         
         return state_full
 
