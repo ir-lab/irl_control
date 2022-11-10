@@ -25,7 +25,11 @@ GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
 class GymBimanual(gym.Env):
-    def __init__(self, robot_config_file : str = None, scene_file : str = None, ):
+    def __init__(self, robot_config_file, scene_file, osc_device_pairs = None):
+        
+        self.action_space = gym.spaces.Box(low=-2.0*np.ones(14), high=2.0*np.ones(14))
+        self.observation_space = gym.spaces.Box(low=-15*np.ones(25), high=15*np.ones(25))
+        
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
         robot_config_path = os.path.join(main_dir, "robot_configs", robot_config_file)
@@ -38,13 +42,16 @@ class GymBimanual(gym.Env):
         self.timer_running = False
         self.robot = self.__get_robot(robot_name="DualUR5")
         
-        # Specify the controller configuations that should be used for the corresponding devices
-        osc_device_configs = [
-            ('base', self.__get_controller_config('osc0')),
-            ('ur5right', self.__get_controller_config('osc2')),
-            ('ur5left', self.__get_controller_config('osc2'))
-        ]
-        
+        if osc_device_pairs is None:
+            # Specify the controller configuations that should be used for the corresponding devices
+            osc_device_configs = [
+                ('base', self.__get_controller_config('osc0')),
+                ('ur5right', self.__get_controller_config('osc2')),
+                ('ur5left', self.__get_controller_config('osc2'))
+            ]
+        else:
+            osc_device_configs = [(dev_name, self.__get_controller_config(osc_name)) for dev_name, osc_name in osc_device_pairs]
+            
         # Get the configuration for the nullspace controller
         nullspace_config = self.__get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance = True)
@@ -81,7 +88,7 @@ class GymBimanual(gym.Env):
         self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
         self.sim.step()
         if self.render_scene:
-            self.viewer.render()
+            self.render()
         
         actions = self.targets2actions(targets)
         obs = self.__observe()
@@ -90,13 +97,13 @@ class GymBimanual(gym.Env):
         self.__maybe_record_states(actions, obs, reward)
         return obs, reward, done
 
-    def reset(self):
-        # Reset the state of the environment to an initial state
-        obs, _ = self.__observe()
-        return obs
+    # def reset(self):
+    #     # Reset the state of the environment to an initial state
+    #     obs, _ = self.__observe()
+    #     return obs
     
     def render(self, close=False):
-        self.sim.render()
+        self.viewer.render()
         # Render the environment to the screen
         ...
 
@@ -114,7 +121,8 @@ class GymBimanual(gym.Env):
             r_T = np.asarray(self.__reward_hist)  # assert r_T.shape == (len(obs),)
             tr = Trajectory(obs_T_Do, obsfeat_T_Df, adist_T_Pa, a_T_Da, r_T)
             tb = TrajBatch.FromTrajs([tr])
-            proto_logger.export_samples_from_expert(tb, [obs_T_Do.shape[0]], f"{EXPERT_TRAJ_DIR}/dual_insert_{hash}.proto")
+            fname = f"{EXPERT_TRAJ_DIR}/dual_insert_{hash}.proto"
+            proto_logger.export_samples_from_expert(tb, [obs_T_Do.shape[0]], fname)
             self.recording = []
 
     def __reward(self):
@@ -128,7 +136,7 @@ class GymBimanual(gym.Env):
         Optionally record states if self.record is set to True
         """
         if self.record:
-            interval = float(1./30)
+            interval = float(1./60)
             if (time.time() - self.prev_time) >= interval:
                 self.prev_time = time.time()
                 self.__observation_hist.append(observation)

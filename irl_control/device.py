@@ -72,6 +72,11 @@ class Device():
         self.ctrl_idxs = np.intersect1d(actuator_trnids, self.joint_ids_all, return_indices=True)[1]
         self.actuator_trnids = actuator_trnids[self.ctrl_idxs]
 
+        if self.name == "ur5right" or self.name == "ur5left":
+            self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
+        elif self.name == "base":
+            self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
+        self.sim.forward()
 
         # Check that the 
         if np.sum(np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])) > len(self.joint_ids):
