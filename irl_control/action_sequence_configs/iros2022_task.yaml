@@ -41,7 +41,7 @@ iros2022_pickup_sequence:
         target_xyz: male_object.grip_offset
         target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Pre-Grasp
-        max_error: 0.04
+        max_error: 0.08
         # noise: [0.0, 0.0025]
     # Open gripper for 1 second
     -   action: GRIP
@@ -58,7 +58,7 @@ iros2022_pickup_sequence:
         target_xyz: male_object.hover_offset
         target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Lift-Object
-        max_error: 0.08
+        max_error: 0.1
         noise: [0.0, 0.005]
 
 iros2022_demo_sequence:

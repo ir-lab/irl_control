@@ -33,7 +33,12 @@ class Device():
         self.ctrlr_dof_xyz = device_yml['ctrlr_dof_xyz']
         self.ctrlr_dof_abg = device_yml['ctrlr_dof_abg']
         self.ctrlr_dof = np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])
-        self.start_angles = np.array(device_yml['start_angles'])
+        
+        if 'start_angles' in device_yml.keys():
+            self.start_angles = np.array(device_yml['start_angles'])
+        else:
+            self.start_angles = None
+        
         self.num_gripper_joints = device_yml['num_gripper_joints']
         
         # Check if the user specifies a start body for the while loop to terminte at
@@ -72,11 +77,12 @@ class Device():
         self.ctrl_idxs = np.intersect1d(actuator_trnids, self.joint_ids_all, return_indices=True)[1]
         self.actuator_trnids = actuator_trnids[self.ctrl_idxs]
 
-        if self.name == "ur5right" or self.name == "ur5left":
-            self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
-        elif self.name == "base":
-            self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
-        self.sim.forward()
+        if self.start_angles is not None:
+            if self.name == "ur5right" or self.name == "ur5left":
+                self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
+            elif self.name == "base":
+                self.sim.data.qpos[self.joint_ids] = np.copy(self.start_angles)
+            self.sim.forward()
 
         # Check that the 
         if np.sum(np.hstack([self.ctrlr_dof_xyz, self.ctrlr_dof_abg])) > len(self.joint_ids):

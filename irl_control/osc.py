@@ -153,10 +153,9 @@ class OSC():
         u_task_all = np.array([])
         ext_f = np.array([])
 
-        if 'base' not in targets.keys() or targets['base'].active is False:
-            x_pos = (targets['ur5left'].get_xyz()[0] + targets['ur5right'].get_xyz()[0])/2
-            y_pos = (targets['ur5left'].get_xyz()[1] + targets['ur5right'].get_xyz()[1])/2
-            targets['base'].set_abg([0, 0, np.arctan2(y_pos, x_pos) - np.pi/2])
+        # x_pos = (targets['ur5left'].get_xyz()[0] + targets['ur5right'].get_xyz()[0])/2
+        # y_pos = (targets['ur5left'].get_xyz()[1] + targets['ur5right'].get_xyz()[1])/2
+        # targets['base'].set_abg([0, 0, np.arctan2(y_pos, x_pos) - np.pi/2])
 
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
@@ -175,7 +174,7 @@ class OSC():
             # Apply kv gain
             kv = self.device_configs[device.name]['kv']
             target_vel = np.hstack([target.get_xyz_vel(), target.get_abg_vel()])
-            if np.all(target_vel) == 0:
+            if np.all(target_vel == 0):
                 u_all[device.joint_ids_all] = -1 * kv * uv_all[device.joint_ids_all]
             else:
                 diff = dx[J_idxs[device_name]] - np.array(target_vel)[device.ctrlr_dof]

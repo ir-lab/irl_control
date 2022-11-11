@@ -10,7 +10,7 @@ devices:
     -   id: 1
         name: "ur5right"
         max_vel: [1, 5]
-        # start_body: "dual_ur_stand"
+        start_body: "dual_ur_stand"
         EE: "ur_EE_ur5right"
         ctrlr_dof_xyz: [True, True, True]
         ctrlr_dof_abg: [False, False, False]
@@ -19,7 +19,7 @@ devices:
     -   id: 2
         name: "ur5left"
         max_vel: [1, 5]
-        # start_body: "dual_ur_stand"
+        start_body: "dual_ur_stand"
         EE: "ur_EE_ur5left"
         ctrlr_dof_xyz: [True, True, True]
         ctrlr_dof_abg: [False, False, False]
@@ -31,17 +31,17 @@ robots:
         device_ids: [0,1,2]
 controller_configs:
     -   name: "osc0"
+        kp: 200
+        kv: 17
+        ki: 1
+        ko: 0.1
+        k: [1,2,3]
+        d: [0.5,1,1]
+    -   name: "osc1"
         kp: 2000
         kv: 20
         ki: 1
         ko: 2000
-        k: [1,2,3]
-        d: [0.5,1,1]
-    -   name: "osc1"
-        kp: 200
-        kv: 50
-        ki: 1
-        ko: 200
         k: [1,2,3]
         d: [0.5,1,1]
     -   name: "osc2"

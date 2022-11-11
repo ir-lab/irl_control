@@ -77,6 +77,7 @@ class InsertionTask(MujocoApp):
         self.targets = { 
             self.active_arm.name : Target(), 
             self.passive_arm.name : Target(), 
+            'base' : Target(), 
         }
 
     def get_default_action_ctrl_params(self, action):

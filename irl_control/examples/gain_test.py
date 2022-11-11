@@ -1,7 +1,7 @@
 from mujoco_py import GlfwContext
 from mujoco_py.mjviewer import MjViewer
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Dict
 import threading
 from irl_control import MujocoApp, OSC
 from irl_control.utils import Target
@@ -26,7 +26,7 @@ class GainTest(MujocoApp):
         # Specify the controller configuations that should be used for
         # the corresponding devices
         osc_device_configs = [
-            ('base', self.get_controller_config('osc0')),
+            ('base', self.get_controller_config('osc1')),
             ('ur5right', self.get_controller_config('osc2')),
             ('ur5left', self.get_controller_config('osc2'))
         ]
@@ -35,11 +35,8 @@ class GainTest(MujocoApp):
         nullspace_config = self.get_controller_config('nullspace')
         self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
 
-        # Start collecting device states from simulator
-        # NOTE: This is necessary when you are using OSC, as it assumes
-        #       that the robot.start() thread is running.
-        self.robot_data_thread = threading.Thread(target=self.robot.start)
-        self.robot_data_thread.start()
+        # self.robot_data_thread = threading.Thread(target=self.robot.start)
+        # self.robot_data_thread.start()
         
         # Keep track of device target errors
         self.errors = dict()
@@ -137,7 +134,7 @@ class GainTest(MujocoApp):
             # Set the target values for the robot's devices
             targets['ur5right'].set_xyz(right_wps[right_wp_idx])
             targets['ur5left'].set_xyz(left_wps[left_wp_idx])
-            # targets['base'].abg[2] = 0.0
+            targets['base'].set_abg([0,0,0])
             
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(targets)
@@ -171,8 +168,8 @@ class GainTest(MujocoApp):
         
         # Join threads / Stop the simulator 
         time_thread.join()
-        self.robot.stop()
-        self.robot_data_thread.join()
+        # self.robot.stop()
+        # self.robot_data_thread.join()
 
 # Main entrypoint
 if __name__ == "__main__":
