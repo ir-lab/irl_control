@@ -26,7 +26,7 @@ class GainTest(MujocoApp):
         # Specify the controller configuations that should be used for
         # the corresponding devices
         osc_device_configs = [
-            ('base', self.get_controller_config('osc1')),
+            ('base', self.get_controller_config('osc0')),
             ('ur5right', self.get_controller_config('osc2')),
             ('ur5left', self.get_controller_config('osc2'))
         ]

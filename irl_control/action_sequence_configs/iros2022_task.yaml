@@ -24,7 +24,7 @@ iros2022_pickup_sequence:
         target_xyz: [[0,0,0], [0.375, 0.3, 0.35], [0.625, -0.3, 0.35]]
         target_quat: [[0.707, 0, 0, -0.707], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Initialization
-        max_error: 0.08
+        max_error: 0.1
     # Open gripper for 1 second
     -   action: GRIP
         gripper_force: -0.1
@@ -35,7 +35,7 @@ iros2022_pickup_sequence:
         target_xyz: male_object.hover_offset
         target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
         name: Pre-Grasp-Hover
-        max_error: 0.08
+        max_error: 0.1
     # Go above the handles
     -   action: WP
         target_xyz: male_object.grip_offset
