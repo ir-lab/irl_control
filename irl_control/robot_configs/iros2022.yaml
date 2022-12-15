@@ -5,7 +5,7 @@ devices:
         EE: "ur_stand_dummy"
         ctrlr_dof_xyz: [False, False, False]
         ctrlr_dof_abg: [False, False, True]
-        start_angles: [-1.56]
+        start_angles: [-1.17]
         num_gripper_joints: 0
     -   id: 1
         name: "ur5right"
@@ -14,7 +14,7 @@ devices:
         EE: "ur_EE_ur5right"
         ctrlr_dof_xyz: [True, True, True]
         ctrlr_dof_abg: [True, True, True]
-        start_angles: [-0.03614821, -0.27430234, -0.47910152, -0.14136462, -0.01368577, -0.54591325]
+        start_angles: [-0.31847944, -0.29641588, -0.24679181, 0.36526209, 0.03692607, -3.71245159]
         num_gripper_joints: 6
     -   id: 2
         name: "ur5left"
@@ -23,7 +23,7 @@ devices:
         EE: "ur_EE_ur5left"
         ctrlr_dof_xyz: [True, True, True]
         ctrlr_dof_abg: [True, True, True]
-        start_angles: [0.05044541,  0.18777629,  0.30305106, -3.10725317,  1.58646237,  2.71767586]
+        start_angles: [-0.06647757, 0.72622471, 0.5389769, -3.29717619, 1.58619279, -0.23601414]
         num_gripper_joints: 6
 robots:
     -   id: 0
@@ -46,7 +46,7 @@ controller_configs:
         d: [0.5,1,1]
     -   name: "osc2"
         kp: 200
-        kv: 20
+        kv: 50
         ki: 1
         ko: 75
         k: [1,2,3]

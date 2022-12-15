@@ -130,11 +130,10 @@ class OSC():
         # targets2['base'] = Target()
         # targets2['base'].set_abg([0,0,0])
 
-        targets2['ur5left'] = targets['ur5left']
         targets2['ur5right'] = targets['ur5right']
+        targets2['ur5left'] = targets['ur5left']
         targets = targets2
         
-        # self.sim.data.set_mocap_pos('target_red', targets['ur5right'].get_xyz())
         if self.robot.is_using_sim() is False:
             assert self.robot.is_running(), "Robot must be running!"
         
@@ -200,8 +199,6 @@ class OSC():
             ext_f = np.append(ext_f, force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
-        base_kv = 50
-        u_all[0] = -1 * base_kv * uv_all[0]
         # Transform task space signal to joint space
         if self.admittance is True:
             u_all -= np.dot(J.T, np.dot(Mx, u_task_all+ext_f))
@@ -224,9 +221,8 @@ class OSC():
         # Return the forces and indices to apply the forces
         forces = []
         force_idxs = []       
-        for dev in self.robot.sub_devices:
-        # for dev_name in targets.keys():
-            # dev = self.robot.sub_devices_dict[dev_name]
+        for dev_name in targets.keys():
+            dev = self.robot.sub_devices_dict[dev_name]
             ist, c1, c2 = np.intersect1d(dev.actuator_trnids, self.robot.joint_ids_all[mask], return_indices=True)
             forces.append(u_all[c2])
             ist2, c12, c22 = np.intersect1d(dev.actuator_trnids, ist, return_indices=True)

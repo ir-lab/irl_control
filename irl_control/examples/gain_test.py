@@ -33,7 +33,7 @@ class GainTest(MujocoApp):
 
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
-        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
+        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance=True)
 
         # self.robot_data_thread = threading.Thread(target=self.robot.start)
         # self.robot_data_thread.start()
@@ -121,7 +121,7 @@ class GainTest(MujocoApp):
         targets: Dict[str, Target] = { 
             'ur5right' : Target(), 
             'ur5left' : Target(), 
-            'base' : Target() 
+            # 'base' : Target()
         }
         # Get the device instances from the robot
         ur5right = self.robot.get_device('ur5right')
@@ -134,7 +134,7 @@ class GainTest(MujocoApp):
             # Set the target values for the robot's devices
             targets['ur5right'].set_xyz(right_wps[right_wp_idx])
             targets['ur5left'].set_xyz(left_wps[left_wp_idx])
-            targets['base'].set_abg([0,0,0])
+            # targets['base'].set_abg([0,0,0])
             
             # Generate an OSC signal to steer robot toward the targets
             ctrlr_output = self.controller.generate(targets)
@@ -178,5 +178,5 @@ if __name__ == "__main__":
     # Run the gain test
     demo_name1 = "gain_test"
     demo.run(demo_name1, 10)
-    # demo_name2 = "figure8"
-    # demo.run(demo_name2, 10)
+    demo_name2 = "figure8"
+    demo.run(demo_name2, 10)

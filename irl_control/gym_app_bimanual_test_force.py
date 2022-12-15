@@ -19,17 +19,17 @@ from gail.policyopt import Trajectory, TrajBatch
 from pathlib import Path
 
 IRL_DATA_DIR = Path(os.environ.get('HOME') + '/irl_control_container/data')
-EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual'
+EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual_test_force_storage'
 
 GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
-class GymBimanual(gym.Env):
+class GymBimanualTestAppForce(gym.Env):
     def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100, 
-                 render_scene=True, record=False, manual_base_ctrl=False):
+                 render_scene=False, record=False, manual_base_ctrl=False):
         
-        self.action_space = gym.spaces.Box(low=-2.0*np.ones(14, dtype=np.float32), high=2.0*np.ones(14, dtype=np.float32))
-        self.observation_space = gym.spaces.Box(low=-15*np.ones(25, dtype=np.float32), high=15*np.ones(25, dtype=np.float32))
+        self.action_space = gym.spaces.Box(low=-300.0*np.ones(13, dtype=np.float32), high=300.0*np.ones(13, dtype=np.float32))
+        self.observation_space = gym.spaces.Box(low=-300*np.ones(25, dtype=np.float32), high=300*np.ones(25, dtype=np.float32))
         
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
@@ -61,7 +61,6 @@ class GymBimanual(gym.Env):
         self.record = record
         self.render_scene = render_scene
         self.manual_base_ctrl = manual_base_ctrl
-        self.picked_up = False
         
         self.data_collect_hz = data_collect_hz
         
@@ -80,48 +79,63 @@ class GymBimanual(gym.Env):
         self.__reward_hist = []
         self.step_count = 0
     
-    def targets2actions(self, targets: Dict[str, Target]):
-        actions = np.zeros(14, dtype=np.float32)
-        actions[:3] = targets['ur5left'].get_xyz()
-        actions[3:6] = targets['ur5right'].get_xyz()
-        actions[6:10] = targets['ur5left'].get_quat()
-        actions[10:14] = targets['ur5right'].get_quat()
-        # actions[14] = targets['base'].get_abg()[2]
-        return actions
+        self.base_idxs = [0]
+        self.ur5right_idxs = [1, 2, 3, 4, 5, 6]
+        self.ur5left_idxs = [8, 9, 10, 11, 12, 13]
+        self.__goal_pos_r = None
+        self.num_steps = 0
+        self.received_reward = False
 
-    def actions2targets(self, actions):
-        targets: Dict[str, Target] = {
-            'base' : Target(),
-            'ur5left' : Target(),
-            'ur5right' : Target()
-        }
+    # def targets2actions(self, targets: Dict[str, Target]):
+    #     actions = np.zeros(6, dtype=np.float32)
+    #     actions[:3] = targets['ur5left'].get_xyz()
+    #     actions[3:6] = targets['ur5right'].get_xyz()
+    #     # actions[14] = targets['base'].get_abg()[2]
+    #     return actions
 
-        targets['ur5left'].set_xyz(actions[:3])
-        targets['ur5right'].set_xyz(actions[3:6])
-        
-        targets['ur5left'].set_quat(actions[6:10])
-        targets['ur5right'].set_quat(actions[10:14])
-        
-        # targets['base'].set_abg([0, 0, actions[14]])
-        targets['base'].active = self.manual_base_ctrl
-        
-        return targets
+    # def actions2targets(self, actions):
+    #     targets: Dict[str, Target] = {
+    #         'ur5left' : Target(),
+    #         'ur5right' : Target()
+    #     }
 
-    # def step(self, targets: Dict[str, Target]):
-    def step(self, actions):
-        targets = self.actions2targets(actions)
-        # Generate an OSC signal to steer robot toward the targets
+    #     targets['ur5left'].set_xyz(actions[:3])
+    #     targets['ur5right'].set_xyz(actions[3:6])
+        
+    #     return targets
+
+    def targets2forces(self, targets: Dict[str, Target]):
         ctrlr_output = self.controller.generate(targets)
-        self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
+        base_action_idx = 0 
+        right_action_idx = 1 # np.argwhere([np.all(ctrlr_output[0][i] == self.ur5right_idxs) for i in range(len(ctrlr_output[0]))]).flatten()[0] ; assert right_action_idx == 1
+        left_action_idx = 2 # np.argwhere([np.all(ctrlr_output[0][i] == self.ur5left_idxs) for i in range(len(ctrlr_output[0]))]).flatten()[0] ; assert left_action_idx == 2
+        base_action = ctrlr_output[1][base_action_idx]
+        ur5left_action = ctrlr_output[1][left_action_idx]
+        ur5right_action = ctrlr_output[1][right_action_idx]
+        return np.hstack([base_action, ur5left_action, ur5right_action])
+    
+
+    def step(self, actions):
+        # Apply forces to the main robot
+        assert len(actions) == 13
+        self.sim.data.ctrl[self.base_idxs] = actions[:1]
+        self.sim.data.ctrl[self.ur5left_idxs] = actions[1:7]
+        self.sim.data.ctrl[self.ur5right_idxs] = actions[7:13]
+        
+        for idx in [GRIP_IDX_RIGHT, GRIP_IDX_LEFT]:
+            self.sim.data.ctrl[idx] = self.gripper_force
+        
+        # self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
+        # actions = self.targets2actions(targets)
         self.sim.step()
         if self.render_scene:
             self.viewer.render()
         
-        actions = self.targets2actions(targets)
         obs = self.__observe()
         reward = self.__reward()
         done = self.__is_done()
         self.__maybe_record_states(actions, obs, reward)
+        self.num_steps += 1
         return obs, reward, done, {}
 
     # def reset(self):
@@ -149,41 +163,67 @@ class GymBimanual(gym.Env):
             tr = Trajectory(obs_T_Do, obsfeat_T_Df, adist_T_Pa, a_T_Da, r_T)
             tb = TrajBatch.FromTrajs([tr])
             fname = f"{EXPERT_TRAJ_DIR}/dual_insert_{hash}.proto"
+            print(f"Total Reward: {sum(r_T)}")
             proto_logger.export_samples_from_expert(tb, [obs_T_Do.shape[0]], fname)
             self.recording = []
 
     def __reward(self):
-        return 0.1
+        assert self.__goal_pos_r is not None
+        ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
+        error = np.linalg.norm(ee_r - self.get_goal_pos_r())
+        if error < 0.02:
+            if not self.received_reward:
+                self.received_reward = True
+            else:
+                return 0
+        return -1*np.log(3*np.linalg.norm(ee_r - self.get_goal_pos_r()))
+
+    def set_goal_pos_r(self, pos_r):
+        self.__goal_pos_r = pos_r
+    
+    def get_goal_pos_r(self):
+        return self.__goal_pos_r
 
     def __is_done(self):
-        if self.picked_up:
-            self.step_count += 1
-            free_joint_name = "free_joint_quad_grommet"
-            jnt_id = self.sim.model.joint_name2id(free_joint_name)
-            offset = self.sim.model.jnt_qposadr[jnt_id]
-            pos_idxs = np.arange(offset, offset+3)
-            pos = self.sim.data.qpos[pos_idxs]
-            is_done = pos[2] < 0.0001
-            if is_done:
-                print(f"Robot ran for {self.step_count} steps")
-            return is_done
-        else:
-            return False
+        assert self.__goal_pos_r is not None
+        ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
+        hands_down = ee_r[2] < 0.1
+        if (self.received_reward):
+            # print(f"Done! Ran for {self.num_steps} steps")
+            return True
+
+        return False
+        # if self.picked_up:
+        #     self.step_count += 1
+        #     free_joint_name = "free_joint_quad_grommet"
+        #     jnt_id = self.sim.model.joint_name2id(free_joint_name)
+        #     offset = self.sim.model.jnt_qposadr[jnt_id]
+        #     pos_idxs = np.arange(offset, offset+3)
+        #     pos = self.sim.data.qpos[pos_idxs]
+        #     is_done = pos[2] < 0.0001
+        #     if is_done:
+        #         print(f"Robot ran for {self.step_count} steps")
+        #     return is_done
+        # else:
+        #     return False
 
     def __maybe_record_states(self, action, observation, reward, verbose=False):
         """
         Optionally record states if self.record is set to True
         """
-        if self.record:
-            interval = float(1./self.data_collect_hz)
-            if (time.time() - self.prev_time) >= interval:
-                self.prev_time = time.time()
-                self.__observation_hist.append(observation)
-                self.__action_hist.append(action)
-                self.__reward_hist.append(reward)
-        else:
-            if verbose:
-                print("[ record_states() ]: Record is set to False: Not recording!")
+        self.__observation_hist.append(observation)
+        self.__action_hist.append(action)
+        self.__reward_hist.append(reward)
+        # if self.record:
+        #     interval = float(1./self.data_collect_hz)
+        #     if ((time.time() - self.prev_time) >= interval) or self.received_reward:
+        #         self.prev_time = time.time()
+        #         self.__observation_hist.append(observation)
+        #         self.__action_hist.append(action)
+        #         self.__reward_hist.append(reward)
+        # else:
+        #     if verbose:
+        #         print("[ record_states() ]: Record is set to False: Not recording!")
 
     def __send_forces(self, forces, gripper_force:float=None):
         """

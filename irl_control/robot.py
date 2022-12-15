@@ -27,6 +27,7 @@ class Robot():
         self.M_vec = np.zeros(self.num_scene_joints**2)
         self.joint_ids_all = np.array([], dtype=np.int32)
         for dev in self.sub_devices:
+            # print(f"{dev.name}: {dev.joint_ids_all}")
             self.joint_ids_all = np.hstack([self.joint_ids_all, dev.joint_ids_all])
         self.joint_ids_all = np.sort(np.unique(self.joint_ids_all))
         self.num_joints_total = len(self.joint_ids_all)
@@ -59,6 +60,10 @@ class Robot():
     
     def __get_dq(self):
         # dq = self.sim.data.qvel[self.joint_ids_all]
+        # dqs = dict()
+        # for dev in self.sub_devices:
+        #     dqs[dev.name] = dev.get_state(DeviceState.DQ)
+        # return dqs
         dq = np.zeros(self.joint_ids_all.shape)
         for dev in self.sub_devices:
             dq[dev.get_all_joint_ids()] = dev.get_state(DeviceState.DQ)

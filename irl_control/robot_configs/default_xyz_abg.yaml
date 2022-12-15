@@ -1,7 +1,7 @@
 devices:
     -   id: 0
         name: "base"
-        max_vel: [0, 2]
+        max_vel: [0, 5]
         EE: "ur_stand_dummy"
         ctrlr_dof_xyz: [False, False, False]
         ctrlr_dof_abg: [False, False, True]
@@ -9,7 +9,7 @@ devices:
         num_gripper_joints: 0
     -   id: 1
         name: "ur5right"
-        max_vel: [1, 5]
+        max_vel: [1, 2]
         start_body: "dual_ur_stand"
         EE: "ur_EE_ur5right"
         ctrlr_dof_xyz: [True, True, True]
@@ -17,7 +17,7 @@ devices:
         num_gripper_joints: 6
     -   id: 2
         name: "ur5left"
-        max_vel: [1, 5]
+        max_vel: [1, 2]
         start_body: "dual_ur_stand"
         EE: "ur_EE_ur5left"
         ctrlr_dof_xyz: [True, True, True]
@@ -30,9 +30,9 @@ robots:
 controller_configs:
     -   name: "osc0"
         kp: 200
-        kv: 30
+        kv: 20
         ki: 1
-        ko: 1
+        ko: 0.1
         k: [1,2,3]
         d: [0.5,1,1]
     -   name: "osc1"

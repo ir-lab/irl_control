@@ -19,17 +19,17 @@ from gail.policyopt import Trajectory, TrajBatch
 from pathlib import Path
 
 IRL_DATA_DIR = Path(os.environ.get('HOME') + '/irl_control_container/data')
-EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual'
+EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual_test_xyz_storage'
 
 GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
-class GymBimanual(gym.Env):
+class GymBimanualTestAppXYZ(gym.Env):
     def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100, 
                  render_scene=True, record=False, manual_base_ctrl=False):
         
-        self.action_space = gym.spaces.Box(low=-2.0*np.ones(14, dtype=np.float32), high=2.0*np.ones(14, dtype=np.float32))
-        self.observation_space = gym.spaces.Box(low=-15*np.ones(25, dtype=np.float32), high=15*np.ones(25, dtype=np.float32))
+        self.action_space = gym.spaces.Box(low=0*np.ones(3, dtype=np.float32), high=2.0*np.ones(3, dtype=np.float32))
+        self.observation_space = gym.spaces.Box(low=0*np.ones(3, dtype=np.float32), high=2.0*np.ones(3, dtype=np.float32))
         
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
@@ -72,7 +72,7 @@ class GymBimanual(gym.Env):
             self.viewer = mujoco_py.MjRenderContextOffscreen(self.sim, -1)
         self.viewer.cam.azimuth = 90
         self.viewer.cam.elevation = -30
-        self.viewer.cam.distance = self.model.stat.extent*1.5
+        self.viewer.cam.distance = self.model.stat.extent*3
         
         self.gripper_force = 0.00
         self.__action_hist = []
@@ -80,36 +80,48 @@ class GymBimanual(gym.Env):
         self.__reward_hist = []
         self.step_count = 0
     
+        self.base_idxs = [0]
+        self.ur5right_idxs = [1, 2, 3, 4, 5, 6]
+        self.ur5left_idxs = [8, 9, 10, 11, 12, 13]
+        self.__goal_pos_r = None
+        self.num_steps = 0
+        self.received_reward = False
+        self.action_count = 0
+    
     def targets2actions(self, targets: Dict[str, Target]):
-        actions = np.zeros(14, dtype=np.float32)
-        actions[:3] = targets['ur5left'].get_xyz()
-        actions[3:6] = targets['ur5right'].get_xyz()
-        actions[6:10] = targets['ur5left'].get_quat()
-        actions[10:14] = targets['ur5right'].get_quat()
+        actions = np.zeros(3, dtype=np.float32)
+        actions[:3] = targets['ur5right'].get_xyz()
+        # actions[3:6] = targets['ur5right'].get_xyz()
         # actions[14] = targets['base'].get_abg()[2]
         return actions
 
     def actions2targets(self, actions):
         targets: Dict[str, Target] = {
-            'base' : Target(),
             'ur5left' : Target(),
             'ur5right' : Target()
         }
 
-        targets['ur5left'].set_xyz(actions[:3])
-        targets['ur5right'].set_xyz(actions[3:6])
+        targets['ur5left'].set_xyz([-0.30148561,  0.46516144,  0.40242017])
+        # if self.action_count % 10 == 0:
+        #     targets['ur5right'].set_xyz(self.get_goal_pos_r())
+        #     self.last_action = actions
+        # else:
+        targets['ur5right'].set_xyz(actions)
         
-        targets['ur5left'].set_quat(actions[6:10])
-        targets['ur5right'].set_quat(actions[10:14])
-        
-        # targets['base'].set_abg([0, 0, actions[14]])
-        targets['base'].active = self.manual_base_ctrl
-        
+        self.sim.data.set_mocap_pos('target_red', targets['ur5right'].get_xyz())
+        self.action_count += 1
+        # if round(np.random.rand()*100) % 3 == 0:
+        #     targets['ur5right'].set_xyz(actions)
+        # else:
+        #     targets['ur5right'].set_xyz(self.get_goal_pos_r())
         return targets
+    
 
-    # def step(self, targets: Dict[str, Target]):
     def step(self, actions):
+        assert len(actions) == 3
         targets = self.actions2targets(actions)
+        self.sim.data.set_mocap_pos('target_blue', self.get_goal_pos_r())
+        # print(targets['ur5right'].get_xyz())
         # Generate an OSC signal to steer robot toward the targets
         ctrlr_output = self.controller.generate(targets)
         self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
@@ -117,7 +129,7 @@ class GymBimanual(gym.Env):
         if self.render_scene:
             self.viewer.render()
         
-        actions = self.targets2actions(targets)
+        # actions = self.targets2actions(targets)
         obs = self.__observe()
         reward = self.__reward()
         done = self.__is_done()
@@ -153,20 +165,24 @@ class GymBimanual(gym.Env):
             self.recording = []
 
     def __reward(self):
-        return 0.1
+        assert self.__goal_pos_r is not None
+        ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
+        error = np.linalg.norm(ee_r - self.get_goal_pos_r())
+        return -1*np.log(2*error)
+
+    def set_goal_pos_r(self, pos_r):
+        self.__goal_pos_r = pos_r
+    
+    def get_goal_pos_r(self):
+        return self.__goal_pos_r
 
     def __is_done(self):
-        if self.picked_up:
-            self.step_count += 1
-            free_joint_name = "free_joint_quad_grommet"
-            jnt_id = self.sim.model.joint_name2id(free_joint_name)
-            offset = self.sim.model.jnt_qposadr[jnt_id]
-            pos_idxs = np.arange(offset, offset+3)
-            pos = self.sim.data.qpos[pos_idxs]
-            is_done = pos[2] < 0.0001
-            if is_done:
-                print(f"Robot ran for {self.step_count} steps")
-            return is_done
+        assert self.__goal_pos_r is not None
+        ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
+        error = np.linalg.norm(ee_r - self.get_goal_pos_r())
+        hands_down = ee_r[2] < 0.1
+        if (error < 0.02):
+            return True
         else:
             return False
 
@@ -174,16 +190,19 @@ class GymBimanual(gym.Env):
         """
         Optionally record states if self.record is set to True
         """
-        if self.record:
-            interval = float(1./self.data_collect_hz)
-            if (time.time() - self.prev_time) >= interval:
-                self.prev_time = time.time()
-                self.__observation_hist.append(observation)
-                self.__action_hist.append(action)
-                self.__reward_hist.append(reward)
-        else:
-            if verbose:
-                print("[ record_states() ]: Record is set to False: Not recording!")
+        self.__observation_hist.append(observation)
+        self.__action_hist.append(action)
+        self.__reward_hist.append(reward)
+        # if self.record:
+        #     interval = float(1./self.data_collect_hz)
+        #     if (time.time() - self.prev_time) >= interval:
+        #         self.prev_time = time.time()
+        #         self.__observation_hist.append(observation)
+        #         self.__action_hist.append(action)
+        #         self.__reward_hist.append(reward)
+        # else:
+        #     if verbose:
+        #         print("[ record_states() ]: Record is set to False: Not recording!")
 
     def __send_forces(self, forces, gripper_force:float=None):
         """
@@ -204,40 +223,16 @@ class GymBimanual(gym.Env):
     def __observe(self):
         state = self.robot.get_device_states()
         observations = np.concatenate(( 
-            state['base'][DeviceState.Q_ACTUATED],                  # 0-1
-            state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
-            state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
-            
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
-            
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
+            # state['base'][DeviceState.Q_ACTUATED], # 1
+            # state['ur5left'][DeviceState.EE_XYZ],  # 2-4
+            state['ur5right'][DeviceState.EE_XYZ], # 5-7
+
         ), dtype=np.float32)
 
         return observations
     
     def get_bip_state(self):
-        state = self.robot.get_device_states()
-        state_full = np.concatenate(( 
-            state['base'][DeviceState.Q_ACTUATED],                  # 0-1
-            state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
-            state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
-            
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
-            
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
-
-            state['ur5left'][DeviceState.EE_XYZ],                   # 26-28
-            state['ur5right'][DeviceState.EE_XYZ],                  # 29-31
-            
-            self.__fix_rot(state['ur5left'][DeviceState.EE_QUAT]),  # 32-35
-            self.__fix_rot(state['ur5right'][DeviceState.EE_QUAT])  # 36-39
-        ), dtype=np.float32)
-        
-        return state_full
+        raise NotImplementedError
 
     def __fix_rot(self, rot):
         """

@@ -5,6 +5,6 @@
     <include file="world.xml"/>
     <include file="dual_ur5.xml"/>
 
-    <include file="../meshes/quad_peg/quad_bracket.xml"/>
-    <include file="../meshes/quad_peg/quad_pegs.xml"/>
+    <!-- <include file="../meshes/quad_peg/quad_bracket.xml"/>
+    <include file="../meshes/quad_peg/quad_pegs.xml"/> -->
 </mujoco>
