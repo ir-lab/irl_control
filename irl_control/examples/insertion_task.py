@@ -57,7 +57,7 @@ class InsertionTask(MujocoApp):
 
         # Get the configuration for the nullspace controller
         nullspace_config = self.get_controller_config('nullspace')
-        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config, admittance=True)
+        self.controller = OSC(self.robot, self.sim, osc_device_configs, nullspace_config)
 
         # self.robot_data_thread = threading.Thread(target=self.robot.start)
         # self.robot_data_thread.start()

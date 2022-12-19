@@ -17,6 +17,8 @@ from hashids import Hashids
 from proto_tools import proto_logger
 from gail.policyopt import Trajectory, TrajBatch
 from pathlib import Path
+import datetime
+import cv2
 
 IRL_DATA_DIR = Path(os.environ.get('HOME') + '/irl_control_container/data')
 EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual_test_xyz_storage'
@@ -26,7 +28,7 @@ GRIP_IDX_LEFT = 14
 
 class GymBimanualTestAppXYZ(gym.Env):
     def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100, 
-                 render_scene=True, record=False, manual_base_ctrl=False):
+                 render_scene=False, record=False, manual_base_ctrl=False):
         
         self.action_space = gym.spaces.Box(low=0*np.ones(3, dtype=np.float32), high=2.0*np.ones(3, dtype=np.float32))
         self.observation_space = gym.spaces.Box(low=0*np.ones(3, dtype=np.float32), high=2.0*np.ones(3, dtype=np.float32))
@@ -72,7 +74,7 @@ class GymBimanualTestAppXYZ(gym.Env):
             self.viewer = mujoco_py.MjRenderContextOffscreen(self.sim, -1)
         self.viewer.cam.azimuth = 90
         self.viewer.cam.elevation = -30
-        self.viewer.cam.distance = self.model.stat.extent*3
+        self.viewer.cam.distance = self.model.stat.extent*2
         
         self.gripper_force = 0.00
         self.__action_hist = []
@@ -87,6 +89,11 @@ class GymBimanualTestAppXYZ(gym.Env):
         self.num_steps = 0
         self.received_reward = False
         self.action_count = 0
+        if not self.render_scene:
+            self.date_suffix = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+            self.image_path = IRL_DATA_DIR / 'camera' / f"bimanual_xyz_{self.date_suffix}"
+            os.mkdir(self.image_path)
+            self.image_id = 0
     
     def targets2actions(self, targets: Dict[str, Target]):
         actions = np.zeros(3, dtype=np.float32)
@@ -125,14 +132,25 @@ class GymBimanualTestAppXYZ(gym.Env):
         # Generate an OSC signal to steer robot toward the targets
         ctrlr_output = self.controller.generate(targets)
         self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
-        self.sim.step()
-        if self.render_scene:
-            self.viewer.render()
+        sim_failed = False
+        try:
+            self.sim.step()
+            if self.render_scene:
+                self.viewer.render()
+            else:
+                if self.image_id % 200 == 0:
+                    self.viewer.render(240, 240, -1)
+                    data = np.asarray(self.viewer.read_pixels(240, 240, depth=False)[::-1, :, :], dtype=np.uint8)
+                    if data is not None:
+                        cv2.imwrite(str(self.image_path / f"bm_{self.image_id/100}.png"), cv2.cvtColor(data, cv2.COLOR_RGB2BGR))
+                self.image_id += 1
+        except:
+            sim_failed = True
         
         # actions = self.targets2actions(targets)
         obs = self.__observe()
         reward = self.__reward()
-        done = self.__is_done()
+        done = self.__is_done() if not sim_failed else True
         self.__maybe_record_states(actions, obs, reward)
         return obs, reward, done, {}
 

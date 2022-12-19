@@ -127,29 +127,22 @@ class OSC():
             targets: dict of device names mapping to Target objects
         """
         targets2 = dict()
-        # targets2['base'] = Target()
-        # targets2['base'].set_abg([0,0,0])
-
         targets2['ur5left'] = targets['ur5left']
         targets2['ur5right'] = targets['ur5right']
         targets = targets2
         
-        # self.sim.data.set_mocap_pos('target_red', targets['ur5right'].get_xyz())
         if self.robot.is_using_sim() is False:
             assert self.robot.is_running(), "Robot must be running!"
         
         robot_state = self.robot.get_all_states()
         # Get the Jacobian for the all of devices passed in
         Js, J_idxs = robot_state[RobotState.J]
-        # J, J_idxs = self.robot.get_jacobian(targets.keys())
         J = np.array([])
         for device_name in targets.keys():
             J = np.vstack([J, Js[device_name]]) if J.size else Js[device_name]
         
         mask = [True]*7 + [False]*6 + [True]*6 + [False]*6
         J = J[:,mask]
-        # Get the inertia matrix for the robot
-        # M = self.robot.get_M()
         M = robot_state[RobotState.M]
         
         M = M[mask]
@@ -159,7 +152,6 @@ class OSC():
         Mx, M_inv = self.__Mx(J, M)
 
         # Initialize the control vectors and sim data needed for control calculations
-        # dq = self.robot.get_dq()
         dq = robot_state[RobotState.DQ]
         dq = dq[mask]
         dx = np.dot(J, dq)
@@ -167,10 +159,6 @@ class OSC():
         u_all = np.zeros(len(self.robot.joint_ids_all[mask]))
         u_task_all = np.array([])
         ext_f = np.array([])
-
-        # x_pos = (targets['ur5left'].get_xyz()[0] + targets['ur5right'].get_xyz()[0])/2
-        # y_pos = (targets['ur5left'].get_xyz()[1] + targets['ur5right'].get_xyz()[1])/2
-        # targets['base'].set_abg([0, 0, np.arctan2(y_pos, x_pos) - np.pi/2])
 
         for device_name, target in targets.items():
             device = self.robot.get_device(device_name)
@@ -200,8 +188,9 @@ class OSC():
             ext_f = np.append(ext_f, force[device.ctrlr_dof])
             u_task_all = np.append(u_task_all, u_task[device.ctrlr_dof])
         
-        base_kv = 50
+        base_kv = 40
         u_all[0] = -1 * base_kv * uv_all[0]
+        
         # Transform task space signal to joint space
         if self.admittance is True:
             u_all -= np.dot(J.T, np.dot(Mx, u_task_all+ext_f))
@@ -225,8 +214,6 @@ class OSC():
         forces = []
         force_idxs = []       
         for dev in self.robot.sub_devices:
-        # for dev_name in targets.keys():
-            # dev = self.robot.sub_devices_dict[dev_name]
             ist, c1, c2 = np.intersect1d(dev.actuator_trnids, self.robot.joint_ids_all[mask], return_indices=True)
             forces.append(u_all[c2])
             ist2, c12, c22 = np.intersect1d(dev.actuator_trnids, ist, return_indices=True)

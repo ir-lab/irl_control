@@ -17,6 +17,8 @@ from hashids import Hashids
 from proto_tools import proto_logger
 from gail.policyopt import Trajectory, TrajBatch
 from pathlib import Path
+import datetime
+import cv2
 
 IRL_DATA_DIR = Path(os.environ.get('HOME') + '/irl_control_container/data')
 EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual_test_force_storage'
@@ -29,7 +31,7 @@ class GymBimanualTestAppForce(gym.Env):
                  render_scene=False, record=False, manual_base_ctrl=False):
         
         self.action_space = gym.spaces.Box(low=-300.0*np.ones(13, dtype=np.float32), high=300.0*np.ones(13, dtype=np.float32))
-        self.observation_space = gym.spaces.Box(low=-300*np.ones(25, dtype=np.float32), high=300*np.ones(25, dtype=np.float32))
+        self.observation_space = gym.spaces.Box(low=-300*np.ones(13, dtype=np.float32), high=300*np.ones(13, dtype=np.float32))
         
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
@@ -83,8 +85,12 @@ class GymBimanualTestAppForce(gym.Env):
         self.ur5right_idxs = [1, 2, 3, 4, 5, 6]
         self.ur5left_idxs = [8, 9, 10, 11, 12, 13]
         self.__goal_pos_r = None
-        self.num_steps = 0
         self.received_reward = False
+        if not self.render_scene:
+            self.date_suffix = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+            self.image_path = IRL_DATA_DIR / 'camera_force' / f"bimanual_force_{self.date_suffix}"
+            os.mkdir(self.image_path)
+            self.image_id = 0
 
     # def targets2actions(self, targets: Dict[str, Target]):
     #     actions = np.zeros(6, dtype=np.float32)
@@ -127,15 +133,26 @@ class GymBimanualTestAppForce(gym.Env):
         
         # self.__send_forces(ctrlr_output, gripper_force=self.gripper_force)
         # actions = self.targets2actions(targets)
-        self.sim.step()
-        if self.render_scene:
-            self.viewer.render()
+        sim_failed = False
+        try:
+            self.sim.step()
+            if self.render_scene:
+                self.viewer.render()
+            else:
+                if self.image_id % 200 == 0:
+                    self.viewer.render(240, 240, -1)
+
+                    data = np.asarray(self.viewer.read_pixels(240, 240, depth=False)[::-1, :, :], dtype=np.uint8)
+                    if data is not None:
+                        cv2.imwrite(str(self.image_path / f"bm_{self.image_id/100}.png"), cv2.cvtColor(data, cv2.COLOR_RGB2BGR))
+                self.image_id += 1
+        except:
+            sim_failed = True
         
         obs = self.__observe()
-        reward = self.__reward()
-        done = self.__is_done()
+        reward = self.__reward() if not sim_failed else -10000
+        done = self.__is_done() if not sim_failed else True
         self.__maybe_record_states(actions, obs, reward)
-        self.num_steps += 1
         return obs, reward, done, {}
 
     # def reset(self):
@@ -171,12 +188,7 @@ class GymBimanualTestAppForce(gym.Env):
         assert self.__goal_pos_r is not None
         ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
         error = np.linalg.norm(ee_r - self.get_goal_pos_r())
-        if error < 0.02:
-            if not self.received_reward:
-                self.received_reward = True
-            else:
-                return 0
-        return -1*np.log(3*np.linalg.norm(ee_r - self.get_goal_pos_r()))
+        return -1*np.log(2*error)
 
     def set_goal_pos_r(self, pos_r):
         self.__goal_pos_r = pos_r
@@ -187,25 +199,11 @@ class GymBimanualTestAppForce(gym.Env):
     def __is_done(self):
         assert self.__goal_pos_r is not None
         ee_r = self.robot.sub_devices_dict['ur5right'].get_state(DeviceState.EE_XYZ)
-        hands_down = ee_r[2] < 0.1
-        if (self.received_reward):
-            # print(f"Done! Ran for {self.num_steps} steps")
+        error = np.linalg.norm(ee_r - self.get_goal_pos_r())
+        if (error < 0.02):
             return True
-
-        return False
-        # if self.picked_up:
-        #     self.step_count += 1
-        #     free_joint_name = "free_joint_quad_grommet"
-        #     jnt_id = self.sim.model.joint_name2id(free_joint_name)
-        #     offset = self.sim.model.jnt_qposadr[jnt_id]
-        #     pos_idxs = np.arange(offset, offset+3)
-        #     pos = self.sim.data.qpos[pos_idxs]
-        #     is_done = pos[2] < 0.0001
-        #     if is_done:
-        #         print(f"Robot ran for {self.step_count} steps")
-        #     return is_done
-        # else:
-        #     return False
+        else:
+            return False
 
     def __maybe_record_states(self, action, observation, reward, verbose=False):
         """
@@ -248,36 +246,17 @@ class GymBimanualTestAppForce(gym.Env):
             state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
             state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
             
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
+            # state['ur5left'][DeviceState.FORCE],                    # 14-16
+            # state['ur5left'][DeviceState.TORQUE],                   # 17-19
             
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
+            # state['ur5right'][DeviceState.FORCE],                   # 20-22
+            # state['ur5right'][DeviceState.TORQUE],                  # 23-25
         ), dtype=np.float32)
 
         return observations
     
     def get_bip_state(self):
-        state = self.robot.get_device_states()
-        state_full = np.concatenate(( 
-            state['base'][DeviceState.Q_ACTUATED],                  # 0-1
-            state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
-            state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
-            
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
-            
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
-
-            state['ur5left'][DeviceState.EE_XYZ],                   # 26-28
-            state['ur5right'][DeviceState.EE_XYZ],                  # 29-31
-            
-            self.__fix_rot(state['ur5left'][DeviceState.EE_QUAT]),  # 32-35
-            self.__fix_rot(state['ur5right'][DeviceState.EE_QUAT])  # 36-39
-        ), dtype=np.float32)
-        
-        return state_full
+        raise NotImplementedError
 
     def __fix_rot(self, rot):
         """
