@@ -17,20 +17,39 @@ from hashids import Hashids
 from proto_tools import proto_logger
 from gail.policyopt import Trajectory, TrajBatch
 from pathlib import Path
+from enum import Enum
 
 IRL_DATA_DIR = Path(os.environ.get('HOME') + '/irl_control_container/data')
-EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories' / 'bimanual'
+EXPERT_TRAJ_DIR = IRL_DATA_DIR / 'expert_trajectories'
 
 GRIP_IDX_RIGHT = 7
 GRIP_IDX_LEFT = 14
 
+class ObservationType(Enum):
+    JNT = "robot_joints"
+    OBJ = "action_objects"
+
+class ActionType(Enum):
+    POS = "position"
+    DPOS = "velocity"
+
 class GymBimanual(gym.Env):
-    def __init__(self, robot_config_file, scene_file, osc_device_pairs=None, data_collect_hz=100, 
-                 render_scene=True, record=False, manual_base_ctrl=False):
-        
+    def __init__(self,
+                 robot_config_file,
+                 scene_file,
+                 osc_device_pairs=None,
+                 data_collect_hz=100, 
+                 render_scene=False,
+                 record=False,
+                 manual_base_ctrl=False,
+                 obs: ObservationType=ObservationType.OBJ,
+                 act: ActionType=ActionType.DPOS):
+        self.OBS_TYPE = obs
+        self.ACT_TYPE = act
+        obs_dim = 26 if self.OBS_TYPE == ObservationType.OBJ else 25
         self.action_space = gym.spaces.Box(low=-2.0*np.ones(14, dtype=np.float32), high=2.0*np.ones(14, dtype=np.float32))
-        self.observation_space = gym.spaces.Box(low=-15*np.ones(25, dtype=np.float32), high=15*np.ones(25, dtype=np.float32))
-        
+        self.observation_space = gym.spaces.Box(low=-15*np.ones(obs_dim, dtype=np.float32), high=15*np.ones(obs_dim, dtype=np.float32))
+
         main_dir = os.path.dirname(irl_control.__file__)
         scene_file_path = os.path.join(main_dir, "scenes", scene_file)
         robot_config_path = os.path.join(main_dir, "robot_configs", robot_config_file)
@@ -68,6 +87,7 @@ class GymBimanual(gym.Env):
         self.prev_time = time.time()
         if self.render_scene:
             self.viewer = MjViewer(self.sim)
+            #self.viewer.
         else:
             self.viewer = mujoco_py.MjRenderContextOffscreen(self.sim, -1)
         self.viewer.cam.azimuth = 90
@@ -79,11 +99,21 @@ class GymBimanual(gym.Env):
         self.__observation_hist = []
         self.__reward_hist = []
         self.step_count = 0
+
+        self.frames = []
+        self.done = False
     
     def targets2actions(self, targets: Dict[str, Target]):
         actions = np.zeros(14, dtype=np.float32)
-        actions[:3] = targets['ur5left'].get_xyz()
-        actions[3:6] = targets['ur5right'].get_xyz()
+        if self.ACT_TYPE == ActionType.DPOS:
+            state = self.robot.get_device_states()
+            cur_pos_left = state['ur5left'][DeviceState.EE_XYZ]
+            cur_pos_right = state['ur5right'][DeviceState.EE_XYZ]
+        else:
+            cur_pos_left = np.array([0,0,0])
+            cur_pos_right = np.array([0,0,0])
+        actions[:3] = targets['ur5left'].get_xyz() - cur_pos_left
+        actions[3:6] = targets['ur5right'].get_xyz() - cur_pos_right
         actions[6:10] = targets['ur5left'].get_quat()
         actions[10:14] = targets['ur5right'].get_quat()
         # actions[14] = targets['base'].get_abg()[2]
@@ -95,9 +125,15 @@ class GymBimanual(gym.Env):
             'ur5left' : Target(),
             'ur5right' : Target()
         }
-
-        targets['ur5left'].set_xyz(actions[:3])
-        targets['ur5right'].set_xyz(actions[3:6])
+        if self.ACT_TYPE == ActionType.DPOS:
+            state = self.robot.get_device_states()
+            cur_pos_left = state['ur5left'][DeviceState.EE_XYZ]
+            cur_pos_right = state['ur5right'][DeviceState.EE_XYZ]
+        else:
+            cur_pos_left = np.array([0,0,0])
+            cur_pos_right = np.array([0,0,0])
+        targets['ur5left'].set_xyz(actions[:3] + cur_pos_left)
+        targets['ur5right'].set_xyz(actions[3:6] + cur_pos_right)
         
         targets['ur5left'].set_quat(actions[6:10])
         targets['ur5right'].set_quat(actions[10:14])
@@ -116,23 +152,21 @@ class GymBimanual(gym.Env):
         self.sim.step()
         if self.render_scene:
             self.viewer.render()
-        
-        actions = self.targets2actions(targets)
-        obs = self.__observe()
+        obs = self.observe()
         reward = self.__reward()
-        done = self.__is_done()
+        if not self.done : self.done = self.is_done()
+        #done = self.is_done()
         self.__maybe_record_states(actions, obs, reward)
-        return obs, reward, done, {}
+        return obs, reward, self.done, {}
 
     # def reset(self):
     #     # Reset the state of the environment to an initial state
-    #     obs, _ = self.__observe()
+    #     obs, _ = self.observe()
     #     return obs
     
     def render(self, close=False):
         self.viewer.render()
         # Render the environment to the screen
-        ...
 
     def set_record(self, val):
         """
@@ -148,27 +182,18 @@ class GymBimanual(gym.Env):
             r_T = np.asarray(self.__reward_hist)  # assert r_T.shape == (len(obs),)
             tr = Trajectory(obs_T_Do, obsfeat_T_Df, adist_T_Pa, a_T_Da, r_T)
             tb = TrajBatch.FromTrajs([tr])
-            fname = f"{EXPERT_TRAJ_DIR}/dual_insert_{hash}.proto"
+            SUB_DIR_OBS = 'joint' if self.OBS_TYPE == ObservationType.JNT else 'object_t'
+            SUB_DIR_ACT = 'pos' if self.ACT_TYPE == ActionType.POS else 'dpos'
+            TRAJ_SUB_DIR = f"bimanual_{SUB_DIR_OBS}_{SUB_DIR_ACT}"
+            fname = f"{EXPERT_TRAJ_DIR}/{TRAJ_SUB_DIR}/dual_insert_{hash}.proto"
             proto_logger.export_samples_from_expert(tb, [obs_T_Do.shape[0]], fname)
             self.recording = []
+            self.__action_hist = []
+            self.__observation_hist = []
+            self.__reward_hist = []
 
     def __reward(self):
         return 0.1
-
-    def __is_done(self):
-        if self.picked_up:
-            self.step_count += 1
-            free_joint_name = "free_joint_quad_grommet"
-            jnt_id = self.sim.model.joint_name2id(free_joint_name)
-            offset = self.sim.model.jnt_qposadr[jnt_id]
-            pos_idxs = np.arange(offset, offset+3)
-            pos = self.sim.data.qpos[pos_idxs]
-            is_done = pos[2] < 0.0001
-            if is_done:
-                print(f"Robot ran for {self.step_count} steps")
-            return is_done
-        else:
-            return False
 
     def __maybe_record_states(self, action, observation, reward, verbose=False):
         """
@@ -201,43 +226,60 @@ class GymBimanual(gym.Env):
             for idx in [GRIP_IDX_RIGHT, GRIP_IDX_LEFT]:
                 self.sim.data.ctrl[idx] = gripper_force
         
-    def __observe(self):
+    def observe(self):
         state = self.robot.get_device_states()
-        observations = np.concatenate(( 
-            state['base'][DeviceState.Q_ACTUATED],                  # 0-1
-            state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
-            state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
-            
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
-            
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
-        ), dtype=np.float32)
+
+        if self.OBS_TYPE == ObservationType.JNT:
+            observations = np.concatenate(( 
+                state['base'][DeviceState.Q_ACTUATED],                  # 0-1
+                state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
+                state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
+                
+                state['ur5left'][DeviceState.FORCE],                    # 14-16
+                state['ur5left'][DeviceState.TORQUE],                   # 17-19
+                
+                state['ur5right'][DeviceState.FORCE],                   # 20-22
+                state['ur5right'][DeviceState.TORQUE],                  # 23-25
+            ), dtype=np.float32)
+
+        elif self.OBS_TYPE == ObservationType.OBJ:
+            observations = np.concatenate((
+                self.sim.data.get_body_xpos("grommet_11mm"),            # 0-3
+                self.sim.data.get_body_xpos("quad_peg"),                # 3-6
+
+                self.sim.data.get_body_xquat("grommet_11mm"),           # 6-10
+                self.sim.data.get_body_xquat("quad_peg"),               # 10-14
+
+                state['ur5left'][DeviceState.FORCE],                    # 14-17
+                state['ur5left'][DeviceState.TORQUE],                   # 17-20
+                
+                state['ur5right'][DeviceState.FORCE],                   # 20-23
+                state['ur5right'][DeviceState.TORQUE],                  # 23-26
+            ))
 
         return observations
     
-    def get_bip_state(self):
-        state = self.robot.get_device_states()
-        state_full = np.concatenate(( 
-            state['base'][DeviceState.Q_ACTUATED],                  # 0-1
-            state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
-            state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
+    # def get_bip_state(self):
+    #     state = self.robot.get_device_states()
+    #     state_full = np.concatenate(( 
+    #         state['base'][DeviceState.Q_ACTUATED],                  # 0-1
+    #         state['ur5left'][DeviceState.Q_ACTUATED],               # 2-7
+    #         state['ur5right'][DeviceState.Q_ACTUATED],              # 8-13
             
-            state['ur5left'][DeviceState.FORCE],                    # 14-16
-            state['ur5left'][DeviceState.TORQUE],                   # 17-19
+    #         state['ur5left'][DeviceState.FORCE],                    # 14-16
+    #         state['ur5left'][DeviceState.TORQUE],                   # 17-19
             
-            state['ur5right'][DeviceState.FORCE],                   # 20-22
-            state['ur5right'][DeviceState.TORQUE],                  # 23-25
+    #         state['ur5right'][DeviceState.FORCE],                   # 20-22
+    #         state['ur5right'][DeviceState.TORQUE],                  # 23-25
 
-            state['ur5left'][DeviceState.EE_XYZ],                   # 26-28
-            state['ur5right'][DeviceState.EE_XYZ],                  # 29-31
+    #         state['ur5left'][DeviceState.EE_XYZ],                   # 26-28
+    #         state['ur5right'][DeviceState.EE_XYZ],                  # 29-31
             
-            self.__fix_rot(state['ur5left'][DeviceState.EE_QUAT]),  # 32-35
-            self.__fix_rot(state['ur5right'][DeviceState.EE_QUAT])  # 36-39
-        ), dtype=np.float32)
+    #         self.__fix_rot(state['ur5left'][DeviceState.EE_QUAT]),  # 32-35
+    #         self.__fix_rot(state['ur5right'][DeviceState.EE_QUAT])  # 36-39
+    #     ), dtype=np.float32)
         
-        return state_full
+    #     return state_full
 
     def __fix_rot(self, rot):
         """

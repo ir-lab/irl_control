@@ -20,22 +20,22 @@ iros2022_action_objects:
 
 iros2022_pickup_sequence:
     # Hover above the male object
-    # -   action: WP
-    #     target_xyz: [[0,0,0], [0.375, 0.3, 0.35], [0.625, -0.3, 0.35]]
-    #     target_quat: [[0.707, 0, 0, -0.707], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
-    #     name: Initialization
-    #     max_error: 0.1
-    # # Open gripper for 1 second
-    # -   action: GRIP
-    #     gripper_force: -0.1
-    #     gripper_duration: 0.1
-    #     name: Open-Grippers
-    # # Go above the handles
-    # -   action: WP
-    #     target_xyz: male_object.hover_offset
-    #     target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
-    #     name: Pre-Grasp-Hover
-    #     max_error: 0.1
+    -   action: WP
+        target_xyz: [[0,0,0], [0.375, 0.3, 0.35], [0.625, -0.3, 0.35]]
+        target_quat: [[0.707, 0, 0, -0.707], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Initialization
+        max_error: 0.1
+    # Open gripper for 1 second
+    -   action: GRIP
+        gripper_force: -0.1
+        gripper_duration: 0.1
+        name: Open-Grippers
+    # Go above the handles
+    -   action: WP
+        target_xyz: male_object.hover_offset
+        target_quat: [[0.8660254, 0, 0, -0.5], [0.707, 0.2, -0.707, 0.2], [0.707, 0.2, -0.707, 0.2]]
+        name: Pre-Grasp-Hover
+        max_error: 0.1
     # Go above the handles
     -   action: WP
         target_xyz: male_object.grip_offset
@@ -50,7 +50,7 @@ iros2022_pickup_sequence:
         name: Close-Grippers
     # Open gripper for 1 second
     -   action: GRIP
-        gripper_force: 0.2
+        gripper_force: 0.3
         gripper_duration: 0.1
         name: Force-Grippers
     # Go above the handles
@@ -67,16 +67,16 @@ iros2022_demo_sequence:
         target_xyz: [[0,0,0], [-0.225, 0.59, 0.3], [0.275, 0.59, 0.3]]
         target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
         name: Transfer
-        max_error: 0.2
+        max_error: 0.1
         steps: 100
         noise: [0.0, 0.001]
     # Make sure the last waypoint is reacht closely
-    -   action: WP
-        target_xyz: [[0,0,0], [-0.225, 0.59, 0.3], [0.275, 0.59, 0.3]]
-        target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
-        name: Pre-Insert-Hover
-        max_error: 0.04
-        noise: [0.0, 0.001]
+    # -   action: WP
+    #     target_xyz: [[0,0,0], [-0.225, 0.59, 0.3], [0.275, 0.59, 0.3]]
+    #     target_quat: [[1.0, 0, 0, 0], [0.707, 0.707, -0.707, 0.707], [0.707, 0.707, -0.707, 0.707]]
+    #     name: Pre-Insert-Hover
+    #     max_error: 0.04
+    #     noise: [0.0, 0.001]
     # Insert
     -   action: INTERP
         target_xyz: [[0,0,0], [-0.225, 0.61, 0.23], [0.275, 0.59, 0.23]]
