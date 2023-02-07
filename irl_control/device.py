@@ -11,6 +11,7 @@ class DeviceState(Enum):
     DQ_ACTUATED = 'DQ_ACTUATED'
     DDQ = 'DDQ'
     EE_XYZ = 'EE_XYZ'
+    EE_XYZ_VEL = 'EE_XYZ_VEL'
     EE_QUAT = 'EE_QUAT'
     FORCE = 'FORCE'
     TORQUE = 'TORQUE'
@@ -90,6 +91,7 @@ class Device():
             DeviceState.DQ_ACTUATED : lambda : self.sim.data.qvel[self.joint_ids],
             DeviceState.DDQ : lambda : self.sim.data.qacc[self.joint_ids_all],
             DeviceState.EE_XYZ : lambda : self.sim.data.get_body_xpos(self.EE),
+            DeviceState.EE_XYZ_VEL : lambda : self.sim.data.get_body_xvelp(self.EE),
             DeviceState.EE_QUAT : lambda : self.sim.data.get_body_xquat(self.EE),
             DeviceState.FORCE : lambda : self.__get_force(),
             DeviceState.TORQUE : lambda : self.__get_torque(),
@@ -104,6 +106,7 @@ class Device():
             DeviceState.Q_ACTUATED, 
             DeviceState.DQ_ACTUATED, 
             DeviceState.EE_XYZ, 
+            DeviceState.EE_XYZ_VEL, 
             DeviceState.EE_QUAT,
             DeviceState.FORCE,
             DeviceState.TORQUE
